@@ -101,11 +101,11 @@ export default function Products() {
                   
                   <div className="flex items-center justify-between">
                     <span className="text-lg font-bold text-primary">
-                      ${product.price}
+                      NRS. {product.price}
                     </span>
-                    <Button size="sm" variant="outline">
+                    {/* <Button size="sm" variant="outline">
                       Add to Cart
-                    </Button>
+                    </Button> */}
                   </div>
                 </div>
               </CardContent>

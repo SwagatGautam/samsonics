@@ -36,7 +36,7 @@ export default function Layout({ children }: LayoutProps) {
             {/* Logo */}
             <div className="flex-shrink-0">
               <Link to="/" className="text-2xl font-bold text-primary">
-                ElectroStore
+                Samsonics
               </Link>
             </div>
 
@@ -87,8 +87,8 @@ export default function Layout({ children }: LayoutProps) {
               {!isAdminPage && (
                 <>
                   <Button variant="ghost" size="sm">
-                    <ShoppingCart className="size-4" />
-                    <span className="ml-2">Cart</span>
+                    {/* <ShoppingCart className="size-4" /> */}
+                    {/* <span className="ml-2">Cart</span> */}
                   </Button>
                   <Button variant="ghost" size="sm">
                     <User className="size-4" />
@@ -190,7 +190,7 @@ export default function Layout({ children }: LayoutProps) {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
             <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
               <div>
-                <h3 className="text-lg font-semibold mb-4">ElectroStore</h3>
+                <h3 className="text-lg font-semibold mb-4">Samsonics</h3>
                 <p className="text-gray-300 text-sm">
                   Your trusted destination for the latest electronic products and gadgets.
                 </p>
@@ -214,14 +214,14 @@ export default function Layout({ children }: LayoutProps) {
               <div>
                 <h4 className="text-md font-semibold mb-4">Contact Info</h4>
                 <div className="text-sm text-gray-300 space-y-2">
-                  <p>123 Tech Street, Digital City</p>
-                  <p>Phone: (555) 123-4567</p>
-                  <p>Email: info@electrostore.com</p>
+                  <p>Kamalpokhari, Kathmandu</p>
+                  <p>Phone: 9840860618</p>
+                  <p>Email: info@Samsonics.com</p>
                 </div>
               </div>
             </div>
             <div className="border-t border-gray-700 mt-8 pt-8 text-center text-sm text-gray-400">
-              <p>&copy; {new Date().getFullYear()} ElectroStore. All rights reserved.</p>
+              <p>&copy; {new Date().getFullYear()} Samsonics. All rights reserved.</p>
             </div>
           </div>
         </footer>

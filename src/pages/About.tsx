@@ -12,21 +12,21 @@ export default function About() {
 
   const team = [
     {
-      name: "Sarah Johnson",
+      name: "Sohil Shrestha",
       role: "CEO & Founder",
       image: "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=300&h=300&fit=crop&crop=face",
       description: "Tech enthusiast with 15 years in the electronics industry"
     },
     {
-      name: "Michael Chen",
-      role: "CTO",
-      image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=300&h=300&fit=crop&crop=face",
+      name: "Sohil Shrestha",
+      role: "Head of Product Development",
+      // image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=300&h=300&fit=crop&crop=face",
       description: "Leading our technical innovation and product development"
     },
     {
-      name: "Emily Rodriguez",
+      name: "Sohil Shrestha",
       role: "Head of Customer Service",
-      image: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=300&h=300&fit=crop&crop=face",
+      // image: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=300&h=300&fit=crop&crop=face",
       description: "Ensuring exceptional customer experience and satisfaction"
     }
   ];
@@ -37,7 +37,7 @@ export default function About() {
       <section className="bg-gradient-to-br from-primary/10 to-secondary/10 py-20">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h1 className="text-4xl lg:text-5xl font-bold text-foreground mb-6 text-balance">
-            About ElectroStore
+            About Samsonics
           </h1>
           <p className="text-xl text-muted-foreground text-balance">
             We're passionate about bringing you the latest and greatest in electronic technology, 
@@ -56,7 +56,7 @@ export default function About() {
               </h2>
               <div className="space-y-4 text-muted-foreground">
                 <p>
-                  Founded in 2014, ElectroStore began as a small family business with a simple mission: 
+                  Founded in 2014, Samsonics began as a small family business with a simple mission: 
                   to make cutting-edge technology accessible to everyone. What started in a garage has 
                   grown into one of the most trusted online electronics retailers.
                 </p>
@@ -183,7 +183,7 @@ export default function About() {
               Meet Our Team
             </h2>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto text-balance">
-              The passionate people behind ElectroStore who make it all happen
+              The passionate people behind Samsonics who make it all happen
             </p>
           </div>
           

@@ -41,19 +41,19 @@ export default function Contact() {
     {
       icon: MapPin,
       title: "Visit Our Store",
-      details: ["123 Tech Street", "Digital City, DC 12345", "United States"],
+      details: ["Kamalpokhari", "Kathmandu", "Nepal"],
       color: "text-blue-600"
     },
     {
       icon: Phone,
       title: "Call Us",
-      details: ["Sales: (555) 123-4567", "Support: (555) 765-4321", "Mon-Fri 8AM-8PM EST"],
+      details: ["Sales: 9840860618", "Support: 9840860618", "Mon-Fri 8AM-8PM NST"],
       color: "text-green-600"
     },
     {
       icon: Mail,
       title: "Email Us",
-      details: ["info@electrostore.com", "support@electrostore.com", "sales@electrostore.com"],
+      details: ["info@Samsonics.com", "support@Samsonics.com", "sales@Samsonics.com"],
       color: "text-orange-600"
     },
     {
@@ -270,7 +270,7 @@ export default function Contact() {
                   <div className="text-center">
                     <MapPin className="size-12 text-gray-500 mx-auto mb-4" />
                     <p className="text-gray-600 font-medium">Interactive Map</p>
-                    <p className="text-sm text-gray-500">123 Tech Street, Digital City</p>
+                    <p className="text-sm text-gray-500">Kamalpokhari, Kathmandu</p>
                   </div>
                 </div>
               </div>

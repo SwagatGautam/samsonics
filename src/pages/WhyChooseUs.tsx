@@ -34,7 +34,7 @@ export default function WhyChooseUs() {
       title: "Fast & Free Shipping",
       description: "Free shipping on orders over $50. Express delivery options available. Track your package every step of the way.",
       color: "bg-orange-500",
-      highlights: ["Free Shipping $50+", "Express Delivery", "Real-time Tracking"]
+      highlights: ["Free Shipping Npr.50+", "Express Delivery", "Real-time Tracking"]
     },
     {
       icon: Headphones,
@@ -75,19 +75,19 @@ export default function WhyChooseUs() {
 
   const testimonials = [
     {
-      name: "Alex Johnson",
+      name: "Swagat Gautam",
       rating: 5,
       comment: "Amazing service! My laptop arrived in perfect condition and the customer support was incredibly helpful.",
       product: "MacBook Pro"
     },
     {
-      name: "Sarah Williams",
+      name: "Ashish Pradhan",
       rating: 5,
       comment: "Best prices I found anywhere online. The shipping was super fast and the product quality is excellent.",
       product: "iPhone 15"
     },
     {
-      name: "Mike Chen",
+      name: "Rishan Chhunju",
       rating: 5,
       comment: "Had an issue with my order and their support team resolved it immediately. Will definitely shop here again!",
       product: "Gaming Headset"
@@ -101,7 +101,7 @@ export default function WhyChooseUs() {
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <Badge className="mb-4">Your Trusted Electronics Partner</Badge>
           <h1 className="text-4xl lg:text-5xl font-bold text-foreground mb-6 text-balance">
-            Why Choose ElectroStore?
+            Why Choose Samsonics?
           </h1>
           <p className="text-xl text-muted-foreground text-balance">
             Discover the advantages that make us the preferred choice for thousands of satisfied customers worldwide.
@@ -194,7 +194,7 @@ export default function WhyChooseUs() {
               What Our Customers Say
             </h2>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto text-balance">
-              Real reviews from real customers who chose ElectroStore
+              Real reviews from real customers who chose Samsonics
             </p>
           </div>
           

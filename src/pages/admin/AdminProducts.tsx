@@ -155,7 +155,7 @@ export default function AdminProducts() {
                       name="price"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Price ($)</FormLabel>
+                          <FormLabel>Price (Npr.)</FormLabel>
                           <FormControl>
                             <Input placeholder="999" type="number" {...field} />
                           </FormControl>
@@ -326,7 +326,7 @@ export default function AdminProducts() {
                       <TableCell>
                         <Badge variant="secondary">{product.category}</Badge>
                       </TableCell>
-                      <TableCell className="font-mono">${product.price}</TableCell>
+                      <TableCell className="font-mono">NRS.{product.price}</TableCell>
                       <TableCell>
                         {product.featured && (
                           <Badge className="bg-yellow-100 text-yellow-800">Featured</Badge>

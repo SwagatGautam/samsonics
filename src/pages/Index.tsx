@@ -92,11 +92,11 @@ export default function Index() {
                     </p>
                     <div className="flex items-center justify-between">
                       <span className="text-lg font-bold text-primary">
-                        ${product.price}
+                        NRS. {product.price}
                       </span>
-                      <Button size="sm" variant="outline">
+                      {/* <Button size="sm" variant="outline">
                         Add to Cart
-                      </Button>
+                      </Button> */}
                     </div>
                   </div>
                 </CardContent>
@@ -120,7 +120,7 @@ export default function Index() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-4">
-              Why Choose ElectroStore?
+              Why Choose Samsonics?
             </h2>
             <p className="text-xl text-gray-600 max-w-2xl mx-auto text-balance">
               We provide the best shopping experience with premium quality products and services
