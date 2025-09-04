@@ -53,7 +53,7 @@ export default function Contact() {
     {
       icon: Mail,
       title: "Email Us",
-      details: ["info@Samsonics.com", "support@Samsonics.com", "sales@Samsonics.com"],
+      details: ["info@Samsonix.com", "support@Samsonix.com", "sales@Samsonix.com"],
       color: "text-orange-600"
     },
     {

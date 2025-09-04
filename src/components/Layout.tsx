@@ -190,7 +190,7 @@ export default function Layout({ children }: LayoutProps) {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
             <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
               <div>
-                <h3 className="text-lg font-semibold mb-4">Samsonics</h3>
+                <h3 className="text-lg font-semibold mb-4">Samsonix</h3>
                 <p className="text-gray-300 text-sm">
                   Your trusted destination for the latest electronic products and gadgets.
                 </p>
@@ -216,12 +216,12 @@ export default function Layout({ children }: LayoutProps) {
                 <div className="text-sm text-gray-300 space-y-2">
                   <p>Kamalpokhari, Kathmandu</p>
                   <p>Phone: 9840860618</p>
-                  <p>Email: info@Samsonics.com</p>
+                  <p>Email: info@Samsonix.com</p>
                 </div>
               </div>
             </div>
             <div className="border-t border-gray-700 mt-8 pt-8 text-center text-sm text-gray-400">
-              <p>&copy; {new Date().getFullYear()} Samsonics. All rights reserved.</p>
+              <p>&copy; {new Date().getFullYear()} Samsonix. All rights reserved.</p>
             </div>
           </div>
         </footer>

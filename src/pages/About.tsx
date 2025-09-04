@@ -37,7 +37,7 @@ export default function About() {
       <section className="bg-gradient-to-br from-primary/10 to-secondary/10 py-20">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h1 className="text-4xl lg:text-5xl font-bold text-foreground mb-6 text-balance">
-            About Samsonics
+            About Samsonix
           </h1>
           <p className="text-xl text-muted-foreground text-balance">
             We're passionate about bringing you the latest and greatest in electronic technology, 
@@ -56,7 +56,7 @@ export default function About() {
               </h2>
               <div className="space-y-4 text-muted-foreground">
                 <p>
-                  Founded in 2014, Samsonics began as a small family business with a simple mission: 
+                  Founded in 2014, Samsonix began as a small family business with a simple mission: 
                   to make cutting-edge technology accessible to everyone. What started in a garage has 
                   grown into one of the most trusted online electronics retailers.
                 </p>
@@ -183,7 +183,7 @@ export default function About() {
               Meet Our Team
             </h2>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto text-balance">
-              The passionate people behind Samsonics who make it all happen
+              The passionate people behind Samsonix who make it all happen
             </p>
           </div>
           

@@ -101,7 +101,7 @@ export default function WhyChooseUs() {
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <Badge className="mb-4">Your Trusted Electronics Partner</Badge>
           <h1 className="text-4xl lg:text-5xl font-bold text-foreground mb-6 text-balance">
-            Why Choose Samsonics?
+            Why Choose Samsonix?
           </h1>
           <p className="text-xl text-muted-foreground text-balance">
             Discover the advantages that make us the preferred choice for thousands of satisfied customers worldwide.
@@ -194,7 +194,7 @@ export default function WhyChooseUs() {
               What Our Customers Say
             </h2>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto text-balance">
-              Real reviews from real customers who chose Samsonics
+              Real reviews from real customers who chose Samsonix
             </p>
           </div>
           
