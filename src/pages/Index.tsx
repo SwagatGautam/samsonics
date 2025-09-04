@@ -80,8 +80,8 @@ export default function Index() {
                         {product.category}
                       </Badge>
                       <div className="flex items-center">
-                        <Star className="size-3 fill-yellow-400 text-yellow-400" />
-                        <span className="text-xs text-gray-500 ml-1">4.8</span>
+                        {/* <Star className="size-3 fill-yellow-400 text-yellow-400" /> */}
+                        {/* <span className="text-xs text-gray-500 ml-1">4.8</span> */}
                       </div>
                     </div>
                     <h3 className="font-semibold text-gray-900 mb-2 line-clamp-1">

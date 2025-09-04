@@ -87,16 +87,16 @@ export default function Products() {
                   
                   <div className="flex items-center gap-2 mb-3">
                     <div className="flex items-center">
-                      {[...Array(5)].map((_, i) => (
+                      {/* {[...Array(5)].map((_, i) => (
                         <Star 
                           key={i} 
                           className={`size-3 ${
                             i < 4 ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'
                           }`} 
                         />
-                      ))}
+                      ))} */}
                     </div>
-                    <span className="text-xs text-muted-foreground">(4.8)</span>
+                    {/* <span className="text-xs text-muted-foreground">(4.8)</span> */}
                   </div>
                   
                   <div className="flex items-center justify-between">
