@@ -10,7 +10,9 @@ interface LayoutProps {
 
 export default function Layout({ children }: LayoutProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const hideHeaderFooterOn = ["/admin/login"];
   const location = useLocation();
+  const hideHeaderFooter = hideHeaderFooterOn.includes(location.pathname)
 
   const navigation = [
     { name: "Home", href: "/" },
@@ -30,6 +32,7 @@ export default function Layout({ children }: LayoutProps) {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
+      {!hideHeaderFooter && (
       <header className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
@@ -39,6 +42,7 @@ export default function Layout({ children }: LayoutProps) {
                 SAMSONIX
               </Link>
             </div>
+     
 
             {/* Desktop Navigation */}
             <nav className="hidden md:flex space-x-8">
@@ -178,6 +182,7 @@ export default function Layout({ children }: LayoutProps) {
           </div>
         )}
       </header>
+      )}
 
       {/* Main Content */}
       <main className="flex-1">

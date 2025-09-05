@@ -1,5 +1,5 @@
 import { BrowserRouter, Route, Routes } from "react-router-dom";
-
+import { Toaster } from "./components/ui/sonner.tsx";
 import { DefaultProviders } from "./components/providers/default.tsx";
 import Layout from "./components/Layout.tsx";
 import Index from "./pages/Index.tsx";
@@ -10,11 +10,13 @@ import Contact from "./pages/Contact.tsx";
 import AdminProducts from "./pages/admin/AdminProducts.tsx";
 import AdminCategories from "./pages/admin/AdminCategories.tsx";
 import NotFound from "./pages/NotFound.tsx";
+import LoginPage from "./pages/admin/AdminLogin.tsx";
 
 export default function App() {
   return (
     <DefaultProviders>
       <BrowserRouter>
+      {/* <Toaster position="top-right" richColors /> */}
         <Layout>
           <Routes>
             <Route path="/" element={<Index />} />
@@ -24,6 +26,7 @@ export default function App() {
             <Route path="/contact" element={<Contact />} />
             <Route path="/admin/products" element={<AdminProducts />} />
             <Route path="/admin/categories" element={<AdminCategories />} />
+            <Route path="/admin/login" element ={<LoginPage />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
