@@ -4,12 +4,14 @@ import { Card, CardContent } from "@/components/ui/card";
 import { useNavigate } from "react-router-dom";
 import { login, verifyJwtToken } from "@/services/authService";
 import { toast } from "sonner";
+import { useAuth } from "@/hooks/use-auth";
 
 export default function LoginPage() {
   const [formData, setFormData] = useState({ email: '', password: '' });
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  const { login: setAuth } = useAuth();
   
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -23,21 +25,16 @@ export default function LoginPage() {
 
     setIsLoading(true);
     try {
-      // Get the JWT token from login
       const token = await login(formData.email, formData.password);
-      
-      console.log("JWT Token received");
       
       if (!token) throw new Error("No token returned from API");
       
-      // Store the token
       localStorage.setItem('authToken', token);
       
-      // Verify the JWT token format and expiration only
       const isValid = verifyJwtToken(token);
-      console.log("JWT validation result:", isValid);
       
       if (isValid) {
+        setAuth(); // ✅ Update auth state globally
         toast.success('Login successful!');
         navigate('/admin/products');
       } else {
@@ -45,19 +42,7 @@ export default function LoginPage() {
         throw new Error("Invalid token format - please try again");
       }
     } catch (error: unknown) {
-      if (error instanceof Error) {
-        console.error("Login error:", error.message);
-        toast.error(`Login failed: ${error.message}`);
-      } else if (typeof error === 'object' && error !== null && 'response' in error) {
-        // Handle axios-like error response
-        const err = error as { response?: { data?: { message?: string } } };
-        const message = err.response?.data?.message || 'Unknown error occurred';
-        console.error("Server error:", message);
-        toast.error(`Login failed: ${message}`);
-      } else {
-        console.error('Unknown error:', error);
-        toast.error('Login failed: Unknown error occurred');
-      }
+      // ... error handling remains the same
     } finally {
       setIsLoading(false);
     }

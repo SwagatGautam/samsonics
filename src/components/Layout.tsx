@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { Menu, ShoppingCart, User, X } from "lucide-react";
+import { Menu, ShoppingCart, User, X, LogOut } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button.tsx";
@@ -10,7 +10,7 @@ interface LayoutProps {
 
 export default function Layout({ children }: LayoutProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-   const hideHeaderFooterOn = ["/admin/login"];
+  const hideHeaderFooterOn = ["/admin/login"];
   const location = useLocation();
   const hideHeaderFooter = hideHeaderFooterOn.includes(location.pathname);
   const { isAuthenticated, logout } = useAuth();
@@ -29,6 +29,11 @@ export default function Layout({ children }: LayoutProps) {
   ];
 
   const isAdminPage = location.pathname.startsWith("/admin");
+
+  const handleLogout = () => {
+    logout();
+    setMobileMenuOpen(false);
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -88,28 +93,44 @@ export default function Layout({ children }: LayoutProps) {
 
               {/* Desktop Actions */}
               <div className="hidden md:flex items-center space-x-4">
-                {!isAdminPage && (
+                {isAdminPage ? (
+                  // Admin panel actions - Show logout button
+                  isAuthenticated && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleLogout}
+                      className="flex items-center"
+                    >
+                      <LogOut className="size-4 mr-2" />
+                      Logout
+                    </Button>
+                  )
+                ) : (
+                  // User site actions
                   <>
                     <Button variant="ghost" size="sm">
                       {/* <ShoppingCart className="size-4" /> */}
                       {/* <span className="ml-2">Cart</span> */}
                     </Button>
-                    {/* <Button variant="ghost" size="sm">
-                      <User className="size-4" />
-                      <span className="ml-2">Account</span>
-                    </Button> */}
-                    <Link to="/admin/login">
-                      <Button variant="outline" size="sm">
-                        Login
-                      </Button>
-                    </Link>
+                    
+                    {isAuthenticated ? (
+                      // If logged in, show Admin Panel button
+                      <Link to="/admin/products">
+                        <Button variant="outline" size="sm">
+                          Admin Panel
+                        </Button>
+                      </Link>
+                    ) : (
+                      // If not logged in, show Login button
+                      <Link to="/admin/login">
+                        <Button variant="outline" size="sm">
+                          Login
+                        </Button>
+                      </Link>
+                    )}
                   </>
                 )}
-                {/* <Link to="/admin/products">
-                  <Button variant="outline" size="sm">
-                    Admin
-                  </Button>
-                </Link> */}
               </div>
 
               {/* Mobile menu button */}
@@ -130,9 +151,9 @@ export default function Layout({ children }: LayoutProps) {
                 <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-white border-t">
                   {isAdminPage ? (
                     <>
-                      {/* <div className="px-3 py-2 text-sm font-medium text-muted-foreground">
+                      <div className="px-3 py-2 text-sm font-medium text-muted-foreground">
                         Admin Panel
-                      </div> */}
+                      </div>
                       {adminNavigation.map((item) => (
                         <Link
                           key={item.name}
@@ -171,20 +192,36 @@ export default function Layout({ children }: LayoutProps) {
                       </Link>
                     ))
                   )}
+                  
                   <div className="border-t pt-3 mt-3">
-                    {!isAdminPage && (
-                      <>
-                        <Link to="/admin/login">
-                          <Button variant="outline" size="sm" className="w-full mb-2">
-                            Login
-                          </Button>
-                        </Link>
-                        {/* <Link to="/admin/products">
+                    {isAdminPage ? (
+                      // Admin panel mobile - Show logout
+                      isAuthenticated && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={handleLogout}
+                          className="w-full flex items-center justify-center"
+                        >
+                          <LogOut className="size-4 mr-2" />
+                          Logout
+                        </Button>
+                      )
+                    ) : (
+                      // User site mobile
+                      isAuthenticated ? (
+                        <Link to="/admin/products">
                           <Button variant="outline" size="sm" className="w-full">
                             Admin Panel
                           </Button>
-                        </Link> */}
-                      </>
+                        </Link>
+                      ) : (
+                        <Link to="/admin/login">
+                          <Button variant="outline" size="sm" className="w-full">
+                            Login
+                          </Button>
+                        </Link>
+                      )
                     )}
                   </div>
                 </div>

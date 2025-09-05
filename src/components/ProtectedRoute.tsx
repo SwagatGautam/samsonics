@@ -1,8 +1,9 @@
 // components/ProtectedRoute.tsx
 import { useEffect, useState } from "react";
-import { Navigate } from "react-router-dom";
-import { verifyJwtToken, verifyToken } from "@/services/authService";
+import { Navigate, useLocation } from "react-router-dom";
+import { verifyToken } from "@/services/authService";
 import { Loader2 } from "lucide-react";
+import { useAuth } from "@/hooks/use-auth";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -10,11 +11,12 @@ interface ProtectedRouteProps {
 
 export default function ProtectedRoute({ children }: ProtectedRouteProps) {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  const location = useLocation();
+  const { isAuthenticated: authState, isLoading } = useAuth();
 
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        // Use the improved JWT verification
         const isValid = await verifyToken();
         setIsAuthenticated(isValid);
       } catch (error) {
@@ -24,9 +26,10 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
     };
     
     checkAuth();
-  }, []);
+  }, [authState]); // Re-check when authState changes
 
-  if (isAuthenticated === null) {
+  // Show loading spinner while checking authentication
+  if (isAuthenticated === null || isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <Loader2 className="h-8 w-8 animate-spin" />
@@ -35,8 +38,9 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
     );
   }
 
+  // Redirect to login if not authenticated
   if (!isAuthenticated) {
-    return <Navigate to="/admin/login" replace />;
+    return <Navigate to="/admin/login" replace state={{ from: location }} />;
   }
 
   return <>{children}</>;
