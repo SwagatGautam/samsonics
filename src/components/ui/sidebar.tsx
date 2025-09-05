@@ -5,7 +5,7 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { PanelLeftIcon } from "lucide-react";
 import { Slot as SlotPrimitive } from "radix-ui";
 
-import { cn } from "@/lib/utils.ts";
+import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile.ts";
 import { Button } from "@/components/ui/button.tsx";
 import { Input } from "@/components/ui/input.tsx";
