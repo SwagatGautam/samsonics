@@ -1,45 +1,79 @@
 import React, { useState, useEffect } from "react";
-import { Award, Users, Globe, Heart, ChevronDown, Play, Pause, ArrowRight, CheckCircle, Star } from "lucide-react";
+import { Award, Users, Globe, Heart, ChevronDown, ArrowRight, CheckCircle, Star } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
+
+interface StatItem {
+  label: string;
+  value: number;
+  suffix: string;
+  icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
+  key: string;
+}
+
+interface TeamMember {
+  name: string;
+  role: string;
+  image: string;
+  description: string;
+  skills: string[];
+}
+
+interface Milestone {
+  year: string;
+  title: string;
+  description: string;
+}
+
+interface FAQ {
+  question: string;
+  answer: string;
+}
+
+interface ValueItem {
+  title: string;
+  icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
+  color: string;
+  description: string;
+}
 
 export default function About() {
   const [activeTab, setActiveTab] = useState("story");
   const [countUp, setCountUp] = useState({ customers: 0, products: 0, countries: 0, years: 0 });
-  const [isVisible, setIsVisible] = useState({});
-  const [expandedFAQ, setExpandedFAQ] = useState(null);
+  const [isVisible, setIsVisible] = useState<Record<string, boolean>>({});
+  const [expandedFAQ, setExpandedFAQ] = useState<number | null>(null);
 
-  const stats = [
+  const stats: StatItem[] = [
     { label: "Happy Customers", value: 50000, suffix: "+", icon: Users, key: "customers" },
     { label: "Products Sold", value: 100000, suffix: "+", icon: Award, key: "products" },
     { label: "Countries Served", value: 25, suffix: "+", icon: Globe, key: "countries" },
     { label: "Years in Business", value: 10, suffix: "+", icon: Heart, key: "years" },
   ];
 
-  const team = [
+  const team: TeamMember[] = [
     {
       name: "Sohil Shrestha",
       role: "CEO & Founder",
-      image: "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=300&h=300&fit=crop&crop=face",
+      image: "e",
       description: "Tech enthusiast with 15 years in the electronics industry",
       skills: ["Leadership", "Strategy", "Innovation"]
     },
     {
       name: "Sohil Shrestha",
       role: "Head of Product Development",
-      image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=300&h=300&fit=crop&crop=face",
+      image: "",
       description: "Leading our technical innovation and product development",
       skills: ["Engineering", "Product Design", "R&D"]
     },
     {
       name: "Sohil Shrestha",
       role: "Head of Customer Service",
-      image: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=300&h=300&fit=crop&crop=face",
+      image: "",
       description: "Ensuring exceptional customer experience and satisfaction",
       skills: ["Customer Care", "Communication", "Problem Solving"]
     }
   ];
 
-  const milestones = [
+  const milestones: Milestone[] = [
     { year: "2014", title: "Company Founded", description: "Started in a garage with big dreams" },
     { year: "2016", title: "First 1000 Customers", description: "Reached our first major milestone" },
     { year: "2019", title: "Global Expansion", description: "Expanded to serve 15+ countries" },
@@ -47,7 +81,7 @@ export default function About() {
     { year: "2024", title: "Innovation Hub", description: "Launched our tech innovation center" }
   ];
 
-  const faqs = [
+  const faqs: FAQ[] = [
     {
       question: "What makes Samsonix different from other electronics retailers?",
       answer: "We focus on quality curation, personal customer service, and competitive pricing. Every product is tested and vetted by our team."
@@ -60,6 +94,12 @@ export default function About() {
       question: "What's your return policy?",
       answer: "We offer a 30-day return policy on most items, with free returns for defective products."
     }
+  ];
+
+  const values: ValueItem[] = [
+    { title: "Quality First", icon: Award, color: "blue", description: "We source only the highest quality products from trusted manufacturers and rigorously test everything before it reaches our customers." },
+    { title: "Customer Centric", icon: Users, color: "green", description: "Every decision we make is driven by what's best for our customers. Your satisfaction and success are our top priorities." },
+    { title: "Innovation", icon: Heart, color: "purple", description: "We stay at the forefront of technology trends to bring you the latest innovations that can make a real difference in your life." }
   ];
 
   // Counter animation
@@ -101,8 +141,17 @@ export default function About() {
     return () => observer.disconnect();
   }, []);
 
-  const formatNumber = (num:any ) => {
+  const formatNumber = (num: number) => {
     return num.toLocaleString();
+  };
+
+  const getColorClass = (color: string) => {
+    switch (color) {
+      case "blue": return "bg-blue-100 text-blue-600";
+      case "green": return "bg-green-100 text-green-600";
+      case "purple": return "bg-purple-100 text-purple-600";
+      default: return "bg-gray-100 text-gray-600";
+    }
   };
 
   return (
@@ -220,15 +269,11 @@ export default function About() {
 
             {activeTab === "values" && (
               <div className="grid grid-cols-1 md:grid-cols-3 gap-8 animate-fade-in">
-                {[
-                  { title: "Quality First", icon: Award, color: "blue", description: "We source only the highest quality products from trusted manufacturers and rigorously test everything before it reaches our customers." },
-                  { title: "Customer Centric", icon: Users, color: "green", description: "Every decision we make is driven by what's best for our customers. Your satisfaction and success are our top priorities." },
-                  { title: "Innovation", icon: Heart, color: "purple", description: "We stay at the forefront of technology trends to bring you the latest innovations that can make a real difference in your life." }
-                ].map((value, index) => (
+                {values.map((value, index) => (
                   <Card key={index} className="group p-8 text-center hover:shadow-2xl transition-all duration-500 hover:-translate-y-4 border-0 bg-gradient-to-br from-card to-card/50">
                     <CardContent className="pt-6">
-                      <div className={`w-20 h-20 mx-auto mb-6 bg-${value.color}-100 rounded-full flex items-center justify-center group-hover:scale-110 group-hover:rotate-6 transition-all duration-300 shadow-lg`}>
-                        <value.icon className={`size-10 text-${value.color}-600`} />
+                      <div className={`w-20 h-20 mx-auto mb-6 rounded-full flex items-center justify-center group-hover:scale-110 group-hover:rotate-6 transition-all duration-300 shadow-lg ${getColorClass(value.color).split(' ')[0]}`}>
+                        <value.icon className={`size-10 ${getColorClass(value.color).split(' ')[1]}`} />
                       </div>
                       <h3 className="text-2xl font-bold text-foreground mb-4 group-hover:text-primary transition-colors">
                         {value.title}
@@ -264,7 +309,7 @@ export default function About() {
                     <stat.icon className="size-10 text-primary group-hover:scale-110 transition-transform" />
                   </div>
                   <div className="text-4xl font-bold text-foreground mb-3 font-mono">
-                    {formatNumber(countUp[stat.key])}{stat.suffix}
+                    {formatNumber(countUp[stat.key as keyof typeof countUp])}{stat.suffix}
                   </div>
                   <div className="text-sm text-muted-foreground font-medium">
                     {stat.label}
@@ -377,7 +422,7 @@ export default function About() {
         </div>
       </section>
 
-      <style jsx>{`
+      <style>{`
         @keyframes float {
           0%, 100% { transform: translateY(0px); }
           50% { transform: translateY(-20px); }
