@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Plus, Edit, Trash2, Search, Package } from "lucide-react";
+import { Plus, Edit, Trash2, Search, Package, Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button.tsx";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card.tsx";
@@ -12,100 +12,178 @@ import { Input } from "@/components/ui/input.tsx";
 import { Textarea } from "@/components/ui/textarea.tsx";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table.tsx";
 import { Badge } from "@/components/ui/badge.tsx";
-import { getCategories, getProducts, type Category } from "@/services/mockData.ts";
 import { toast } from "sonner";
+import { categoryApi, Category, CategoryAttribute, CategoryFormData as ApiCategoryFormData } from "@/services/categoryAPI";
 
-const categorySchema = z.object({
-  name: z.string().min(2, "Name must be at least 2 characters"),
-  description: z.string().min(10, "Description must be at least 10 characters"),
+// Define form schema with attributes
+const attributeSchema = z.object({
+  attributeName: z.string().min(1, "Attribute name is required"),
+  type: z.enum(["dropdown", "string", "checkbox"]),
+  isRequired: z.boolean().optional(), // Make isRequired optional to match the type
+  possibleValuesJson: z.array(z.string()).optional(),
 });
 
+const categorySchema = z.object({
+  categoryName: z.string().min(2, "Name must be at least 2 characters"),
+  categoryAttributes: z.array(attributeSchema),
+});
+
+// Use the inferred type from the schema
 type CategoryFormData = z.infer<typeof categorySchema>;
 
+// Type for the updateAttribute function parameter
+type AttributeField = keyof CategoryAttribute;
+type AttributeValue = string | boolean | string[];
+
 export default function AdminCategories() {
-  const [categories, setCategories] = useState<Category[]>(getCategories());
+  const [categories, setCategories] = useState<Category[]>([]);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  
-  const products = getProducts();
-  
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Explicitly type the useForm hook with CategoryFormData
   const form = useForm<CategoryFormData>({
     resolver: zodResolver(categorySchema),
     defaultValues: {
-      name: "",
-      description: "",
+      categoryName: "",
+      categoryAttributes: [],
     },
   });
 
+  // Fetch categories on component mount
+  useEffect(() => {
+    fetchCategories();
+  }, []);
+
+  const fetchCategories = async (): Promise<void> => {
+    try {
+      setIsLoading(true);
+      const categoriesData = await categoryApi.getAllCategories();
+      setCategories(categoriesData);
+    } catch (error) {
+      console.error("Error fetching categories:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const filteredCategories = categories.filter(category =>
-    category.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    category.description.toLowerCase().includes(searchTerm.toLowerCase())
+    category.categoryName.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const getCategoryProductCount = (categoryName: string) => {
-    return products.filter(product => product.category === categoryName).length;
-  };
+  // Explicitly type the onSubmit handler
+  const onSubmit = async (data: CategoryFormData): Promise<void> => {
+    setIsSubmitting(true);
+    try {
+      // Convert form data to API format
+      const apiData: ApiCategoryFormData = {
+        categoryName: data.categoryName,
+        categoryAttributes: data.categoryAttributes.map(attr => ({
+          attributeName: attr.attributeName,
+          type: attr.type,
+          isRequired: attr.isRequired ?? false, // Handle undefined case
+          possibleValuesJson: attr.possibleValuesJson || [],
+        })),
+      };
 
-  const onSubmit = (data: CategoryFormData) => {
-    const categoryData: Category = {
-      id: editingCategory ? editingCategory.id : Date.now(),
-      name: data.name,
-      description: data.description,
-    };
-
-    if (editingCategory) {
-      setCategories(categories.map(c => c.id === editingCategory.id ? categoryData : c));
-      toast.success("Category updated successfully!");
-    } else {
-      // Check if category name already exists
-      const existingCategory = categories.find(c => c.name.toLowerCase() === data.name.toLowerCase());
-      if (existingCategory) {
-        form.setError("name", { message: "A category with this name already exists" });
-        return;
+      if (editingCategory && editingCategory.categoryId) {
+        await categoryApi.updateCategory(editingCategory.categoryId, apiData);
+      } else {
+        await categoryApi.createCategory(apiData);
       }
-      
-      setCategories([...categories, categoryData]);
-      toast.success("Category created successfully!");
-    }
 
-    handleCloseDialog();
+      // Refresh the categories list
+      await fetchCategories();
+      handleCloseDialog();
+    } catch (error) {
+      console.error("Error saving category:", error);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  const handleEdit = (category: Category) => {
+  const handleEdit = (category: Category): void => {
     setEditingCategory(category);
     form.reset({
-      name: category.name,
-      description: category.description,
+      categoryName: category.categoryName,
+      categoryAttributes: category.categoryAttributes.map(attr => ({
+        attributeName: attr.attributeName,
+        type: attr.type,
+        isRequired: attr.isRequired,
+        possibleValuesJson: attr.possibleValuesJson || [],
+      })),
     });
     setIsDialogOpen(true);
   };
 
-  const handleDelete = (id: number, categoryName: string) => {
-    const productCount = getCategoryProductCount(categoryName);
-    
-    if (productCount > 0) {
-      toast.error(`Cannot delete category "${categoryName}" because it contains ${productCount} product(s). Please move or delete the products first.`);
-      return;
-    }
-    
+  const handleDelete = async (categoryId: string, categoryName: string): Promise<void> => {
     if (window.confirm(`Are you sure you want to delete the category "${categoryName}"?`)) {
-      setCategories(categories.filter(c => c.id !== id));
-      toast.success("Category deleted successfully!");
+      try {
+        await categoryApi.deleteCategory(categoryId);
+        // Refresh the categories list
+        await fetchCategories();
+      } catch (error) {
+        console.error("Error deleting category:", error);
+      }
     }
   };
 
-  const handleCloseDialog = () => {
+  const handleCloseDialog = (): void => {
     setIsDialogOpen(false);
     setEditingCategory(null);
-    form.reset();
+    form.reset({
+      categoryName: "",
+      categoryAttributes: [],
+    });
   };
 
-  const handleAddNew = () => {
+  const handleAddNew = (): void => {
     setEditingCategory(null);
-    form.reset();
+    form.reset({
+      categoryName: "",
+      categoryAttributes: [],
+    });
     setIsDialogOpen(true);
   };
+
+  // Add a new attribute field
+  const addAttribute = (): void => {
+    const currentAttributes = form.getValues("categoryAttributes") || [];
+    form.setValue("categoryAttributes", [
+      ...currentAttributes,
+      { attributeName: "", type: "string", isRequired: false, possibleValuesJson: [] }
+    ]);
+  };
+
+  // Remove an attribute field
+  const removeAttribute = (index: number): void => {
+    const currentAttributes = form.getValues("categoryAttributes") || [];
+    form.setValue("categoryAttributes", currentAttributes.filter((_, i) => i !== index));
+  };
+
+  // Update attribute field with proper typing
+  const updateAttribute = (index: number, field: AttributeField, value: AttributeValue): void => {
+    const currentAttributes = form.getValues("categoryAttributes") || [];
+    const updatedAttributes = [...currentAttributes];
+
+    // Create a new object with the updated field
+    updatedAttributes[index] = {
+      ...updatedAttributes[index],
+      [field]: value,
+    };
+
+    form.setValue("categoryAttributes", updatedAttributes);
+  };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background p-6 flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background p-6">
@@ -116,7 +194,7 @@ export default function AdminCategories() {
             <h1 className="text-3xl font-bold text-foreground">Categories Management</h1>
             <p className="text-muted-foreground">Organize your products into categories</p>
           </div>
-          
+
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
               <Button onClick={handleAddNew}>
@@ -124,49 +202,123 @@ export default function AdminCategories() {
                 Add Category
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-md">
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>
                   {editingCategory ? "Edit Category" : "Add New Category"}
                 </DialogTitle>
               </DialogHeader>
-              
+
               <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                   <FormField
                     control={form.control}
-                    name="name"
+                    name="categoryName"
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Category Name</FormLabel>
                         <FormControl>
-                          <Input placeholder="Smartphones" {...field} />
+                          <Input placeholder="Refrigerator" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
-                  
-                  <FormField
-                    control={form.control}
-                    name="description"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Description</FormLabel>
-                        <FormControl>
-                          <Textarea 
-                            placeholder="Latest mobile devices and accessories"
-                            className="min-h-20"
-                            {...field} 
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
+
+                  <div>
+                    <FormLabel>Attributes</FormLabel>
+                    <div className="space-y-4 mt-2">
+                      {form.watch("categoryAttributes")?.map((attribute, index) => (
+                        <div key={index} className="p-4 border rounded-lg space-y-4">
+                          <div className="flex justify-between items-center">
+                            <h4 className="font-medium">Attribute #{index + 1}</h4>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => removeAttribute(index)}
+                            >
+                              Remove
+                            </Button>
+                          </div>
+
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <FormItem>
+                              <FormLabel>Attribute Name</FormLabel>
+                              <FormControl>
+                                <Input
+                                  value={attribute.attributeName}
+                                  onChange={(e) => updateAttribute(index, "attributeName", e.target.value)}
+                                  placeholder="Number of doors"
+                                />
+                              </FormControl>
+                            </FormItem>
+
+                            <FormItem>
+                              <FormLabel>Type</FormLabel>
+                              <FormControl>
+                                <select
+                                  value={attribute.type}
+                                  onChange={(e) => updateAttribute(
+                                    index,
+                                    "type",
+                                    e.target.value as "dropdown" | "string" | "checkbox"
+                                  )}
+                                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                >
+                                  <option value="dropdown">Dropdown</option>
+                                  <option value="string">Text</option>
+                                  <option value="checkbox">Checkbox</option>
+                                </select>
+                              </FormControl>
+                            </FormItem>
+                          </div>
+
+                          <FormItem>
+                            <div className="flex items-center space-x-2">
+                              <input
+                                type="checkbox"
+                                id={`required-${index}`}
+                                checked={attribute.isRequired ?? false} // Handle undefined case
+                                onChange={(e) => updateAttribute(index, "isRequired", e.target.checked)}
+                                className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                              />
+                              <label htmlFor={`required-${index}`} className="text-sm font-medium">
+                                Required field
+                              </label>
+                            </div>
+                          </FormItem>
+
+                          {attribute.type === "dropdown" && (
+                            <FormItem>
+                              <FormLabel>Possible Values (one per line)</FormLabel>
+                              <FormControl>
+                                <Textarea
+                                  value={attribute.possibleValuesJson?.join("\n") || ""}
+                                  onChange={(e) => updateAttribute(
+                                    index,
+                                    "possibleValuesJson",
+                                    e.target.value.split("\n").filter(v => v.trim())
+                                  )}
+                                  placeholder="Single&#10;Double&#10;Triple"
+                                  className="min-h-20"
+                                />
+                              </FormControl>
+                            </FormItem>
+                          )}
+                        </div>
+                      ))}
+
+                      <Button type="button" variant="outline" onClick={addAttribute}>
+                        <Plus className="size-4 mr-2" />
+                        Add Attribute
+                      </Button>
+                    </div>
+                  </div>
+
                   <div className="flex gap-3">
-                    <Button type="submit" className="flex-1">
+                    <Button type="submit" className="flex-1" disabled={isSubmitting}>
+                      {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                       {editingCategory ? "Update Category" : "Create Category"}
                     </Button>
                     <Button type="button" variant="outline" onClick={handleCloseDialog}>
@@ -195,50 +347,58 @@ export default function AdminCategories() {
 
         {/* Categories Grid View */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-          {filteredCategories.map((category) => {
-            const productCount = getCategoryProductCount(category.name);
-            return (
-              <Card key={category.id} className="hover:shadow-md transition-shadow">
-                <CardHeader className="pb-3">
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
-                        <Package className="size-5 text-primary" />
-                      </div>
-                      <div>
-                        <CardTitle className="text-lg">{category.name}</CardTitle>
-                        <Badge variant="secondary" className="text-xs mt-1">
-                          {productCount} products
-                        </Badge>
-                      </div>
+          {filteredCategories.map((category) => (
+            <Card key={category.categoryId} className="hover:shadow-md transition-shadow">
+              <CardHeader className="pb-3">
+                <div className="flex items-start justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
+                      <Package className="size-5 text-primary" />
                     </div>
-                    <div className="flex gap-1">
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => handleEdit(category)}
-                      >
-                        <Edit className="size-4" />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => handleDelete(category.id, category.name)}
-                        className="text-destructive hover:text-destructive"
-                      >
-                        <Trash2 className="size-4" />
-                      </Button>
+                    <div>
+                      <CardTitle className="text-lg">{category.categoryName}</CardTitle>
+                      <Badge variant="secondary" className="text-xs mt-1">
+                        {category.categoryAttributes.length} attributes
+                      </Badge>
                     </div>
                   </div>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-muted-foreground">
-                    {category.description}
-                  </p>
-                </CardContent>
-              </Card>
-            );
-          })}
+                  <div className="flex gap-1">
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => handleEdit(category)}
+                    >
+                      <Edit className="size-4" />
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => category.categoryId && handleDelete(category.categoryId, category.categoryName)}
+                      className="text-destructive hover:text-destructive"
+                    >
+                      <Trash2 className="size-4" />
+                    </Button>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="text-sm text-muted-foreground mb-3">
+                  Attributes:
+                </div>
+                <div className="space-y-2">
+                  {category.categoryAttributes.map((attr, idx) => (
+                    <div key={idx} className="text-xs">
+                      <span className="font-medium">{attr.attributeName}</span>
+                      <span className="text-muted-foreground"> ({attr.type})</span>
+                      {attr.isRequired && (
+                        <Badge variant="outline" className="ml-2 text-xs">Required</Badge>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          ))}
         </div>
 
         {/* Categories Table View */}
@@ -252,66 +412,56 @@ export default function AdminCategories() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Name</TableHead>
-                    <TableHead>Description</TableHead>
-                    <TableHead>Products</TableHead>
+                    <TableHead>Attributes</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredCategories.map((category) => {
-                    const productCount = getCategoryProductCount(category.name);
-                    return (
-                      <TableRow key={category.id}>
-                        <TableCell>
-                          <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center">
-                              <Package className="size-4 text-primary" />
-                            </div>
-                            <div className="font-medium">{category.name}</div>
+                  {filteredCategories.map((category) => (
+                    <TableRow key={category.categoryId}>
+                      <TableCell>
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center">
+                            <Package className="size-4 text-primary" />
                           </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="text-sm text-muted-foreground max-w-md line-clamp-2">
-                            {category.description}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="secondary">
-                            {productCount} product{productCount !== 1 ? 's' : ''}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex justify-end gap-2">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleEdit(category)}
-                            >
-                              <Edit className="size-4" />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="destructive"
-                              onClick={() => handleDelete(category.id, category.name)}
-                              disabled={productCount > 0}
-                            >
-                              <Trash2 className="size-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
+                          <div className="font-medium">{category.categoryName}</div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="text-sm text-muted-foreground">
+                          {category.categoryAttributes.length} attributes
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleEdit(category)}
+                          >
+                            <Edit className="size-4" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={() => category.categoryId && handleDelete(category.categoryId, category.categoryName)}
+                          >
+                            <Trash2 className="size-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
                 </TableBody>
               </Table>
-              
+
               {filteredCategories.length === 0 && (
                 <div className="text-center py-8">
                   <Package className="size-12 text-muted-foreground mx-auto mb-4" />
                   <p className="text-muted-foreground">No categories found</p>
                   {searchTerm && (
-                    <Button 
-                      variant="outline" 
+                    <Button
+                      variant="outline"
                       className="mt-4"
                       onClick={() => setSearchTerm("")}
                     >
@@ -334,16 +484,20 @@ export default function AdminCategories() {
           </Card>
           <Card>
             <CardContent className="p-6 text-center">
-              <div className="text-2xl font-bold text-foreground">{products.length}</div>
-              <div className="text-sm text-muted-foreground">Total Products</div>
+              <div className="text-2xl font-bold text-foreground">
+                {categories.reduce((total, cat) => total + cat.categoryAttributes.length, 0)}
+              </div>
+              <div className="text-sm text-muted-foreground">Total Attributes</div>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="p-6 text-center">
               <div className="text-2xl font-bold text-foreground">
-                {categories.length > 0 ? Math.round(products.length / categories.length) : 0}
+                {categories.length > 0
+                  ? Math.round(categories.reduce((total, cat) => total + cat.categoryAttributes.length, 0) / categories.length)
+                  : 0}
               </div>
-              <div className="text-sm text-muted-foreground">Avg Products/Category</div>
+              <div className="text-sm text-muted-foreground">Avg Attributes/Category</div>
             </CardContent>
           </Card>
         </div>

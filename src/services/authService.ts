@@ -1,10 +1,10 @@
 // authService.ts
 import axios from "axios";
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5225/api";
+const VITE_API_URL = import.meta.env.VITE_VITE_API_URL || "http://localhost:5225/api";
 
 export const login = async (email: string, password: string): Promise<string> => {
-  const response = await axios.post(`${API_URL}/user/login`, { email, password });
+  const response = await axios.post(`${VITE_API_URL}/user/login`, { email, password });
   
   if (response.data.success === true && response.data.data) {
     return response.data.data; // Return the JWT token
