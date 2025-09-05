@@ -15,7 +15,7 @@ export function DefaultProviders({ children }: { children: React.ReactNode }) {
         <QueryClientProvider>
           <TooltipProvider>
             <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-              <Toaster />
+              <Toaster position="top-center"/>
               {children}
             </ThemeProvider>
           </TooltipProvider>
