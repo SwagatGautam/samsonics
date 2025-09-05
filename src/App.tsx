@@ -1,3 +1,4 @@
+// App.tsx
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { Toaster } from "./components/ui/sonner.tsx";
 import { DefaultProviders } from "./components/providers/default.tsx";
@@ -11,22 +12,40 @@ import AdminProducts from "./pages/admin/AdminProducts.tsx";
 import AdminCategories from "./pages/admin/AdminCategories.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import LoginPage from "./pages/admin/AdminLogin.tsx";
+import ProtectedRoute from "./components/ProtectedRoute.tsx"
 
 export default function App() {
   return (
     <DefaultProviders>
       <BrowserRouter>
-      {/* <Toaster position="top-right" richColors /> */}
         <Layout>
           <Routes>
+            {/* Public routes */}
             <Route path="/" element={<Index />} />
             <Route path="/about" element={<About />} />
             <Route path="/products" element={<Products />} />
             <Route path="/why-choose-us" element={<WhyChooseUs />} />
             <Route path="/contact" element={<Contact />} />
-            <Route path="/admin/products" element={<AdminProducts />} />
-            <Route path="/admin/categories" element={<AdminCategories />} />
-            <Route path="/admin/login" element ={<LoginPage />} />
+            <Route path="/admin/login" element={<LoginPage />} />
+            
+            {/* Protected admin routes */}
+            <Route 
+              path="/admin/products" 
+              element={
+                <ProtectedRoute>
+                  <AdminProducts />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/admin/categories" 
+              element={
+                <ProtectedRoute>
+                  <AdminCategories />
+                </ProtectedRoute>
+              } 
+            />
+            
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
