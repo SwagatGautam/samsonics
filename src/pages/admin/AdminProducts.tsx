@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -13,87 +13,157 @@ import { Textarea } from "@/components/ui/textarea.tsx";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select.tsx";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table.tsx";
 import { Badge } from "@/components/ui/badge.tsx";
-import { getProducts, getCategoryNames, type Product } from "@/services/mockData.ts";
+import { Checkbox } from "@/components/ui/checkbox.tsx";
 import { toast } from "sonner";
+import { productApi, Product, ProductFormData, PaginatedProductResponse, ProductFilter } from "@/services/productAPI.ts";
+import { categoryApi, Category, CategoryAttribute } from "@/services/categoryAPI.ts";
 
+// Form schema aligned with ProductFormData
 const productSchema = z.object({
-  name: z.string().min(2, "Name must be at least 2 characters"),
-  price: z.string().refine((val) => !isNaN(Number(val)) && Number(val) > 0, "Price must be a positive number"),
-  description: z.string().min(10, "Description must be at least 10 characters"),
-  category: z.string().min(1, "Please select a category"),
-  image: z.string().url("Please enter a valid image URL"),
-  featured: z.boolean().optional()
+  productName: z.string().min(2, "Name must be at least 2 characters"),
+  productUnitPrice: z.string().refine((val) => !isNaN(Number(val)) && Number(val) > 0, "Price must be a positive number"),
+  productDescription: z.string().min(10, "Description must be at least 10 characters"),
+  categoryId: z.string().min(1, "Please select a category"),
+  productQuantity: z.string().refine((val) => !isNaN(Number(val)) && Number(val) >= 0, "Quantity must be a non-negative number"),
+  hotDeals: z.boolean(),
+  productImage: z.instanceof(File).nullable(),
+  productAttributes: z.array(
+    z.object({
+      CategoryAttrId: z.string().min(1, "Attribute ID is required"),
+      AttributeName: z.string().min(1, "Attribute name is required"),
+      AttributeValue: z.string().min(1, "Attribute value is required"),
+      ProductAttributeType: z.enum(["dropdown", "string", "checkbox"]),
+    })
+  ).optional(),
 });
 
-type ProductFormData = z.infer<typeof productSchema>;
+type FormData = z.infer<typeof productSchema>;
 
 export default function AdminProducts() {
-  const [products, setProducts] = useState<Product[]>(getProducts());
+  const [products, setProducts] = useState<Product[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
+  const [pageNumber, setPageNumber] = useState(1);
+  const [pageSize] = useState(10);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
-  
-  const categories = getCategoryNames();
-  
-  const form = useForm<ProductFormData>({
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const form = useForm<FormData>({
     resolver: zodResolver(productSchema),
     defaultValues: {
-      name: "",
-      price: "",
-      description: "",
-      category: "",
-      image: "",
-      featured: false
+      productName: "",
+      productUnitPrice: "",
+      productDescription: "",
+      categoryId: "",
+      productQuantity: "",
+      hotDeals: false,
+      productImage: null,
+      productAttributes: [],
     },
   });
 
-  const filteredProducts = products.filter(product => {
-    const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         product.description.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = selectedCategory === "All" || product.category === selectedCategory;
-    return matchesSearch && matchesCategory;
-  });
-
-  const onSubmit = (data: ProductFormData) => {
-    const productData: Product = {
-      id: editingProduct ? editingProduct.id : Date.now(),
-      name: data.name,
-      price: Number(data.price),
-      description: data.description,
-      category: data.category,
-      image: data.image,
-      featured: data.featured || false
+  // Fetch categories
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const categories = await categoryApi.getAllCategories();
+        setCategories(categories);
+      } catch (error) {
+        console.error("Error fetching categories:", error);
+      }
     };
+    fetchCategories();
+  }, []);
 
-    if (editingProduct) {
-      setProducts(products.map(p => p.id === editingProduct.id ? productData : p));
-      toast.success("Product updated successfully!");
-    } else {
-      setProducts([...products, productData]);
-      toast.success("Product created successfully!");
+  // Fetch products
+  useEffect(() => {
+    const fetchProducts = async () => {
+      setIsLoading(true);
+      try {
+        const filter: ProductFilter = {
+          pageNumber,
+          pageSize,
+          attributeFilters: {},
+        };
+        if (selectedCategory !== "All") {
+          filter.attributeFilters = { categoryId: selectedCategory };
+        }
+        const response = await productApi.getAllProducts(filter);
+        setProducts(
+          response.items.filter(
+            (product) =>
+              product.productName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+              product.productDescription.toLowerCase().includes(searchTerm.toLowerCase())
+          )
+        );
+        setTotalCount(response.totalCount);
+      } catch (error) {
+        console.error("Error fetching products:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchProducts();
+  }, [pageNumber, selectedCategory, searchTerm]);
+
+  const filteredProducts = products;
+
+  const onSubmit = async (data: FormData) => {
+    try {
+      const productData: ProductFormData = {
+        productName: data.productName,
+        productUnitPrice: Number(data.productUnitPrice),
+        productDescription: data.productDescription,
+        categoryId: data.categoryId,
+        productQuantity: Number(data.productQuantity),
+        hotDeals: data.hotDeals,
+        productImage: data.productImage,
+        productAttributes: data.productAttributes || [],
+      };
+
+      if (editingProduct) {
+        await productApi.updateProduct(editingProduct.productId, productData);
+      } else {
+        await productApi.createProduct(productData);
+      }
+      handleCloseDialog();
+      const response = await productApi.getAllProducts({ pageNumber, pageSize });
+      setProducts(response.items);
+      setTotalCount(response.totalCount);
+    } catch (error) {
+      console.error("Error saving product:", error);
     }
-
-    handleCloseDialog();
   };
 
-  const handleEdit = (product: Product) => {
+  const handleEdit = async (product: Product) => {
+    console.log("Editing product:", product); // Debug log to inspect product data
     setEditingProduct(product);
     form.reset({
-      name: product.name,
-      price: product.price.toString(),
-      description: product.description,
-      category: product.category,
-      image: product.image,
-      featured: product.featured || false
+      productName: product.productName || "",
+      productUnitPrice: product.productUnitPrice != null ? product.productUnitPrice.toString() : "",
+      productDescription: product.productDescription || "",
+      categoryId: product.categoryId || "",
+      productQuantity: product.productQuantity != null ? product.productQuantity.toString() : "",
+      hotDeals: product.hotDeals || false,
+      productImage: null,
+      productAttributes: product.productAttributes || [],
     });
     setIsDialogOpen(true);
   };
 
-  const handleDelete = (id: number) => {
+  const handleDelete = async (productId: string) => {
     if (window.confirm("Are you sure you want to delete this product?")) {
-      setProducts(products.filter(p => p.id !== id));
-      toast.success("Product deleted successfully!");
+      try {
+        await productApi.deleteProduct(productId);
+        const response = await productApi.getAllProducts({ pageNumber, pageSize });
+        setProducts(response.items);
+        setTotalCount(response.totalCount);
+      } catch (error) {
+        console.error("Error deleting product:", error);
+      }
     }
   };
 
@@ -109,6 +179,13 @@ export default function AdminProducts() {
     setIsDialogOpen(true);
   };
 
+  const handlePageChange = (newPage: number) => {
+    setPageNumber(newPage);
+  };
+
+  // Get attributes for the selected category
+  const selectedCategoryAttributes = categories.find((c) => c.categoryId === form.watch("categoryId"))?.categoryAttributes || [];
+
   return (
     <div className="min-h-screen bg-background p-6">
       <div className="max-w-7xl mx-auto">
@@ -118,7 +195,7 @@ export default function AdminProducts() {
             <h1 className="text-3xl font-bold text-foreground">Products Management</h1>
             <p className="text-muted-foreground">Manage your product catalog</p>
           </div>
-          
+
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
               <Button onClick={handleAddNew}>
@@ -128,17 +205,15 @@ export default function AdminProducts() {
             </DialogTrigger>
             <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
-                <DialogTitle>
-                  {editingProduct ? "Edit Product" : "Add New Product"}
-                </DialogTitle>
+                <DialogTitle>{editingProduct ? "Edit Product" : "Add New Product"}</DialogTitle>
               </DialogHeader>
-              
+
               <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <FormField
                       control={form.control}
-                      name="name"
+                      name="productName"
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Product Name</FormLabel>
@@ -149,10 +224,10 @@ export default function AdminProducts() {
                         </FormItem>
                       )}
                     />
-                    
+
                     <FormField
                       control={form.control}
-                      name="price"
+                      name="productUnitPrice"
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Price (Npr.)</FormLabel>
@@ -163,15 +238,29 @@ export default function AdminProducts() {
                         </FormItem>
                       )}
                     />
+
+                    <FormField
+                      control={form.control}
+                      name="productQuantity"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Quantity</FormLabel>
+                          <FormControl>
+                            <Input placeholder="100" type="number" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
                   </div>
-                  
+
                   <FormField
                     control={form.control}
-                    name="category"
+                    name="categoryId"
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Category</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <Select onValueChange={field.onChange} value={field.value}>
                           <FormControl>
                             <SelectTrigger>
                               <SelectValue placeholder="Select a category" />
@@ -179,8 +268,8 @@ export default function AdminProducts() {
                           </FormControl>
                           <SelectContent>
                             {categories.map((category) => (
-                              <SelectItem key={category} value={category}>
-                                {category}
+                              <SelectItem key={category.categoryId} value={category.categoryId!}>
+                                {category.categoryName}
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -189,61 +278,151 @@ export default function AdminProducts() {
                       </FormItem>
                     )}
                   />
-                  
+
                   <FormField
                     control={form.control}
-                    name="description"
+                    name="productDescription"
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Description</FormLabel>
                         <FormControl>
-                          <Textarea 
-                            placeholder="Product description..."
-                            className="min-h-24"
-                            {...field} 
-                          />
+                          <Textarea placeholder="Product description..." className="min-h-24" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
-                  
+
                   <FormField
                     control={form.control}
-                    name="image"
+                    name="productImage"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Image URL</FormLabel>
+                        <FormLabel>Product Image</FormLabel>
                         <FormControl>
                           <div className="flex gap-2">
-                            <Input placeholder="https://example.com/image.jpg" {...field} />
+                            <Input
+                              type="file"
+                              accept="image/*"
+                              onChange={(e) => field.onChange(e.target.files ? e.target.files[0] : null)}
+                            />
                             <Button type="button" variant="outline" size="sm">
                               <Upload className="size-4" />
                             </Button>
                           </div>
                         </FormControl>
+                        {editingProduct && (
+                          <div className="mt-2">
+                            <img
+                              src={editingProduct.productImageUrl}
+                              alt="Current product"
+                              className="w-24 h-24 object-cover rounded-md"
+                            />
+                            <p className="text-sm text-muted-foreground">Current Cloudinary Image</p>
+                          </div>
+                        )}
                         <FormMessage />
                       </FormItem>
                     )}
                   />
-                  
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      id="featured"
-                      {...form.register("featured")}
-                      className="rounded border-gray-300"
+
+                  <FormField
+                    control={form.control}
+                    name="hotDeals"
+                    render={({ field }) => (
+                      <FormItem className="flex items-center space-x-2">
+                        <FormControl>
+                          <Checkbox checked={field.value} onCheckedChange={field.onChange} id="hotDeals" />
+                        </FormControl>
+                        <FormLabel htmlFor="hotDeals" className="text-sm font-medium">
+                          Hot Deals
+                        </FormLabel>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  {/* Dynamic attributes based on selected category */}
+                  {selectedCategoryAttributes.length > 0 && (
+                    <FormField
+                      control={form.control}
+                      name="productAttributes"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Product Attributes</FormLabel>
+                          {selectedCategoryAttributes.map((attr, index) => (
+                            <div key={attr.attributeId} className="space-y-2">
+                              <FormLabel>
+                                {attr.attributeName} {attr.isRequired && <span className="text-red-500">*</span>}
+                              </FormLabel>
+                              {attr.type === "dropdown" ? (
+                                <Select
+                                  value={field.value?.[index]?.AttributeValue || ""}
+                                  onValueChange={(value) => {
+                                    const newAttributes = [...(field.value || [])];
+                                    newAttributes[index] = {
+                                      CategoryAttrId: attr.attributeId!,
+                                      AttributeName: attr.attributeName,
+                                      AttributeValue: value,
+                                      ProductAttributeType: attr.type,
+                                    };
+                                    field.onChange(newAttributes);
+                                  }}
+                                >
+                                  <SelectTrigger>
+                                    <SelectValue placeholder={`Select ${attr.attributeName}`} />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {attr.possibleValuesJson.map((value) => (
+                                      <SelectItem key={value} value={value}>
+                                        {value}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              ) : attr.type === "checkbox" ? (
+                                <Checkbox
+                                  checked={field.value?.[index]?.AttributeValue === "true"}
+                                  onCheckedChange={(checked) => {
+                                    const newAttributes = [...(field.value || [])];
+                                    newAttributes[index] = {
+                                      CategoryAttrId: attr.attributeId!,
+                                      AttributeName: attr.attributeName,
+                                      AttributeValue: checked ? "true" : "false",
+                                      ProductAttributeType: attr.type,
+                                    };
+                                    field.onChange(newAttributes);
+                                  }}
+                                />
+                              ) : (
+                                <Input
+                                  value={field.value?.[index]?.AttributeValue || ""}
+                                  onChange={(e) => {
+                                    const newAttributes = [...(field.value || [])];
+                                    newAttributes[index] = {
+                                      CategoryAttrId: attr.attributeId!,
+                                      AttributeName: attr.attributeName,
+                                      AttributeValue: e.target.value,
+                                      ProductAttributeType: attr.type,
+                                    };
+                                    field.onChange(newAttributes);
+                                  }}
+                                  placeholder={`Enter ${attr.attributeName}`}
+                                />
+                              )}
+                            </div>
+                          ))}
+                          <FormMessage />
+                        </FormItem>
+                      )}
                     />
-                    <label htmlFor="featured" className="text-sm font-medium">
-                      Featured Product
-                    </label>
-                  </div>
-                  
+                  )}
+
                   <div className="flex gap-3">
-                    <Button type="submit" className="flex-1">
+                    <Button type="submit" className="flex-1" disabled={isLoading}>
                       {editingProduct ? "Update Product" : "Create Product"}
                     </Button>
-                    <Button type="button" variant="outline" onClick={handleCloseDialog}>
+                    <Button type="button" variant="outline" onClick={handleCloseDialog} disabled={isLoading}>
                       Cancel
                     </Button>
                   </div>
@@ -266,7 +445,7 @@ export default function AdminProducts() {
                   className="max-w-sm"
                 />
               </div>
-              
+
               <div className="flex items-center gap-2">
                 <Filter className="size-4 text-muted-foreground" />
                 <Select value={selectedCategory} onValueChange={setSelectedCategory}>
@@ -276,8 +455,8 @@ export default function AdminProducts() {
                   <SelectContent>
                     <SelectItem value="All">All Categories</SelectItem>
                     {categories.map((category) => (
-                      <SelectItem key={category} value={category}>
-                        {category}
+                      <SelectItem key={category.categoryId} value={category.categoryId!}>
+                        {category.categoryName}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -290,7 +469,7 @@ export default function AdminProducts() {
         {/* Products Table */}
         <Card>
           <CardHeader>
-            <CardTitle>Products ({filteredProducts.length})</CardTitle>
+            <CardTitle>Products ({totalCount})</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="overflow-x-auto">
@@ -301,50 +480,50 @@ export default function AdminProducts() {
                     <TableHead>Name</TableHead>
                     <TableHead>Category</TableHead>
                     <TableHead>Price</TableHead>
+                    <TableHead>Quantity</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredProducts.map((product) => (
-                    <TableRow key={product.id}>
+                    <TableRow key={product.productId}>
                       <TableCell>
-                        <img 
-                          src={product.image} 
-                          alt={product.name}
+                        <img
+                          src={product.productImageUrl}
+                          alt={product.productName}
                           className="w-12 h-12 object-cover rounded-md"
                         />
                       </TableCell>
                       <TableCell>
                         <div>
-                          <div className="font-medium">{product.name}</div>
+                          <div className="font-medium">{product.productName}</div>
                           <div className="text-sm text-muted-foreground line-clamp-1">
-                            {product.description}
+                            {product.productDescription}
                           </div>
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Badge variant="secondary">{product.category}</Badge>
+                        <Badge variant="secondary">
+                          {categories.find((c) => c.categoryId === product.categoryId)?.categoryName || product.categoryId}
+                        </Badge>
                       </TableCell>
-                      <TableCell className="font-mono">NRS.{product.price}</TableCell>
+                      <TableCell className="font-mono">{product.productUnitPrice != null ? `NRS.${product.productUnitPrice}` : "N/A"}</TableCell>
+                      <TableCell>{product.productQuantity != null ? product.productQuantity : "N/A"}</TableCell>
                       <TableCell>
-                        {product.featured && (
-                          <Badge className="bg-yellow-100 text-yellow-800">Featured</Badge>
+                        {product.hotDeals && (
+                          <Badge className="bg-yellow-100 text-yellow-800">Hot Deal</Badge>
                         )}
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleEdit(product)}
-                          >
+                          <Button size="sm" variant="outline" onClick={() => handleEdit(product)}>
                             <Edit className="size-4" />
                           </Button>
                           <Button
                             size="sm"
                             variant="destructive"
-                            onClick={() => handleDelete(product.id)}
+                            onClick={() => handleDelete(product.productId)}
                           >
                             <Trash2 className="size-4" />
                           </Button>
@@ -354,12 +533,31 @@ export default function AdminProducts() {
                   ))}
                 </TableBody>
               </Table>
-              
+
               {filteredProducts.length === 0 && (
                 <div className="text-center py-8">
                   <p className="text-muted-foreground">No products found</p>
                 </div>
               )}
+            </div>
+
+            {/* Pagination */}
+            <div className="flex justify-between items-center mt-4">
+              <Button
+                disabled={pageNumber === 1 || isLoading}
+                onClick={() => handlePageChange(pageNumber - 1)}
+              >
+                Previous
+              </Button>
+              <span>
+                Page {pageNumber} of {Math.ceil(totalCount / pageSize)}
+              </span>
+              <Button
+                disabled={pageNumber * pageSize >= totalCount || isLoading}
+                onClick={() => handlePageChange(pageNumber + 1)}
+              >
+                Next
+              </Button>
             </div>
           </CardContent>
         </Card>

@@ -30,21 +30,30 @@ export interface ApiResponse<T = unknown> {
 
 // Types
 export interface ProductAttribute {
-  attributeName: string;
-  value: string; // The selected value for the attribute (e.g., "Single" for a dropdown)
-  type: 'dropdown' | 'string' | 'checkbox';
+  CategoryAttrId: string;
+  AttributeName: string;
+  AttributeValue: string;
+  ProductAttributeType: 'dropdown' | 'string' | 'checkbox';
 }
 
 export interface Product {
-  productId?: string;
+  productId: string;
   categoryId: string;
   productName: string;
   productDescription: string;
-  productImage: string; // URL or path returned by the API
-  productQuantity: number;
-  productUnitPrice: number;
+  productImageUrl: string;
+  productQuantity: number | null; // Allow null
+  productUnitPrice: number | null; // Allow null
   hotDeals: boolean;
   productAttributes: ProductAttribute[];
+}
+
+// Paginated response for product view API
+export interface PaginatedProductResponse {
+  items: Product[];
+  totalCount: number;
+  pageNumber: number;
+  pageSize: number;
 }
 
 // Product form data (for creating/updating)
@@ -52,11 +61,21 @@ export interface ProductFormData {
   categoryId: string;
   productName: string;
   productDescription: string;
-  productImage: File | null; // File for upload
+  productImage: File | null;
   productQuantity: number;
   productUnitPrice: number;
   hotDeals: boolean;
   productAttributes: ProductAttribute[];
+}
+
+// Filter parameters for product view API
+export interface ProductFilter {
+  pageNumber: number;
+  pageSize: number;
+  minPrice?: number | null;
+  maxPrice?: number | null;
+  hotdeals?: boolean;
+  attributeFilters?: Record<string, string | null>;
 }
 
 // Handle API response
@@ -77,16 +96,35 @@ const handleResponse = async <T>(response: Response): Promise<ApiResponse<T>> =>
 
 // Product API functions
 export const productApi = {
-  // Get all products
-  getAllProducts: async (): Promise<Product[]> => {
+  getAllProducts: async (filter: ProductFilter): Promise<PaginatedProductResponse> => {
     try {
-      const response = await fetch(`${API_BASE_URL}/product/view`, {
-        method: 'GET',
-        headers: getHeaders(),
+      const queryParams = new URLSearchParams({
+        pageNumber: filter.pageNumber.toString(),
+        pageSize: filter.pageSize.toString(),
+        ...(filter.minPrice !== null && filter.minPrice !== undefined && { minPrice: filter.minPrice.toString() }),
+        ...(filter.maxPrice !== null && filter.maxPrice !== undefined && { maxPrice: filter.maxPrice.toString() }),
+        ...(filter.hotdeals !== undefined && { hotdeals: filter.hotdeals.toString() }),
       });
 
-      const data = await handleResponse<Product[]>(response);
-      return data.data || [];
+      const body = {
+        pageNumber: filter.pageNumber,
+        pageSize: filter.pageSize,
+        ...(filter.minPrice !== null && filter.minPrice !== undefined && { minPrice: filter.minPrice }),
+        ...(filter.maxPrice !== null && filter.maxPrice !== undefined && { maxPrice: filter.maxPrice }),
+        ...(filter.hotdeals !== undefined && { hotdeals: filter.hotdeals }),
+        ...(filter.attributeFilters && Object.keys(filter.attributeFilters).length > 0 && {
+          attributeFilters: filter.attributeFilters,
+        }),
+      };
+
+      const response = await fetch(`${API_BASE_URL}/product/view?${queryParams.toString()}`, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify(body),
+      });
+
+      const data = await handleResponse<PaginatedProductResponse>(response);
+      return data.data || { items: [], totalCount: 0, pageNumber: 1, pageSize: 10 };
     } catch (error) {
       console.error('Error fetching products:', error);
       toast.error('Failed to fetch products');
@@ -94,7 +132,6 @@ export const productApi = {
     }
   },
 
-  // Get single product by ID
   getProduct: async (productId: string): Promise<Product> => {
     try {
       const response = await fetch(`${API_BASE_URL}/product/${productId}`, {
@@ -111,7 +148,6 @@ export const productApi = {
     }
   },
 
-  // Create new product
   createProduct: async (productData: ProductFormData): Promise<ApiResponse<null>> => {
     try {
       const formData = new FormData();
@@ -128,7 +164,7 @@ export const productApi = {
 
       const response = await fetch(`${API_BASE_URL}/product`, {
         method: 'POST',
-        headers: getHeaders(true), // Exclude Content-Type for multipart
+        headers: getHeaders(true),
         body: formData,
       });
 
@@ -142,7 +178,6 @@ export const productApi = {
     }
   },
 
-  // Update product
   updateProduct: async (productId: string, productData: ProductFormData): Promise<ApiResponse<null>> => {
     try {
       const formData = new FormData();
@@ -159,7 +194,7 @@ export const productApi = {
 
       const response = await fetch(`${API_BASE_URL}/product/${productId}`, {
         method: 'PUT',
-        headers: getHeaders(true), // Exclude Content-Type for multipart
+        headers: getHeaders(true),
         body: formData,
       });
 
@@ -173,7 +208,6 @@ export const productApi = {
     }
   },
 
-  // Delete product
   deleteProduct: async (productId: string): Promise<ApiResponse<null>> => {
     try {
       const response = await fetch(`${API_BASE_URL}/product/${productId}`, {
