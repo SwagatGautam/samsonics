@@ -1,13 +1,54 @@
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight, Star, Truck, Shield, Headphones } from "lucide-react";
 
 import { Button } from "@/components/ui/button.tsx";
 import { Card, CardContent } from "@/components/ui/card.tsx";
 import { Badge } from "@/components/ui/badge.tsx";
-import { getFeaturedProducts } from "@/services/mockData.ts";
+import { productApi, Product, PaginatedProductResponse, ProductFilter } from "@/services/productAPI.ts";
+import { categoryApi, Category } from "@/services/categoryAPI.ts";
 
 export default function Index() {
-  const featuredProducts = getFeaturedProducts();
+  const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Fetch categories for mapping categoryId to categoryName
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const categories = await categoryApi.getAllCategories();
+        setCategories(categories);
+      } catch (error) {
+        console.error("Error fetching categories:", error);
+        setError("Failed to load categories");
+      }
+    };
+    fetchCategories();
+  }, []);
+
+  // Fetch featured products
+  useEffect(() => {
+    const fetchFeaturedProducts = async () => {
+      setIsLoading(true);
+      try {
+        const filter: ProductFilter = {
+          pageNumber: 1,
+          pageSize: 4, // Limit to 4 featured products
+          hotdeals: true, // Fetch products marked as hot deals
+        };
+        const response: PaginatedProductResponse = await productApi.getAllProducts(filter);
+        setFeaturedProducts(response.items);
+      } catch (error) {
+        console.error("Error fetching featured products:", error);
+        setError("Failed to load featured products");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchFeaturedProducts();
+  }, []);
 
   return (
     <div className="min-h-screen">
@@ -63,46 +104,49 @@ export default function Index() {
             </p>
           </div>
           
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            {featuredProducts.map((product) => (
-              <Card key={product.id} className="group cursor-pointer hover:shadow-lg transition-all duration-300">
-                <CardContent className="p-0">
-                  <div className="aspect-square overflow-hidden rounded-t-lg">
-                    <img 
-                      src={product.image} 
-                      alt={product.name}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                    />
-                  </div>
-                  <div className="p-4">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Badge variant="secondary" className="text-xs">
-                        {product.category}
-                      </Badge>
-                      <div className="flex items-center">
-                        {/* <Star className="size-3 fill-yellow-400 text-yellow-400" /> */}
-                        {/* <span className="text-xs text-gray-500 ml-1">4.8</span> */}
+          {isLoading ? (
+            <div className="text-center">
+              <p className="text-gray-600">Loading featured products...</p>
+            </div>
+          ) : error ? (
+            <div className="text-center">
+              <p className="text-red-600">{error}</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+              {featuredProducts.map((product) => (
+                <Card key={product.productId} className="group cursor-pointer hover:shadow-lg transition-all duration-300">
+                  <CardContent className="p-0">
+                    <div className="aspect-square overflow-hidden rounded-t-lg">
+                      <img 
+                        src={product.productImageUrl} 
+                        alt={product.productName}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                    </div>
+                    <div className="p-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Badge variant="secondary" className="text-xs">
+                          {categories.find((c) => c.categoryId === product.categoryId)?.categoryName || product.categoryId}
+                        </Badge>
+                      </div>
+                      <h3 className="font-semibold text-gray-900 mb-2 line-clamp-1">
+                        {product.productName}
+                      </h3>
+                      <p className="text-sm text-gray-600 mb-3 line-clamp-2">
+                        {product.productDescription}
+                      </p>
+                      <div className="flex items-center justify-between">
+                        <span className="text-lg font-bold text-primary">
+                          {product.productUnitPrice != null ? `NRS. ${product.productUnitPrice}` : "N/A"}
+                        </span>
                       </div>
                     </div>
-                    <h3 className="font-semibold text-gray-900 mb-2 line-clamp-1">
-                      {product.name}
-                    </h3>
-                    <p className="text-sm text-gray-600 mb-3 line-clamp-2">
-                      {product.description}
-                    </p>
-                    <div className="flex items-center justify-between">
-                      <span className="text-lg font-bold text-primary">
-                        NRS. {product.price}
-                      </span>
-                      {/* <Button size="sm" variant="outline">
-                        Add to Cart
-                      </Button> */}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
           
           <div className="text-center">
             <Link to="/products">

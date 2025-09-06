@@ -1,20 +1,66 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Star, Filter } from "lucide-react";
 
 import { Button } from "@/components/ui/button.tsx";
 import { Card, CardContent } from "@/components/ui/card.tsx";
 import { Badge } from "@/components/ui/badge.tsx";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select.tsx";
-import { getProducts, getProductsByCategory, getCategoryNames } from "@/services/mockData.ts";
+import { productApi, Product, PaginatedProductResponse, ProductFilter } from "@/services/productAPI.ts";
+import { categoryApi, Category } from "@/services/categoryAPI.ts";
 
 export default function Products() {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
-  const allProducts = getProducts();
-  const categories = getCategoryNames();
-  
-  const filteredProducts = selectedCategory === "All" 
-    ? allProducts 
-    : getProductsByCategory(selectedCategory);
+  const [pageNumber, setPageNumber] = useState(1);
+  const [pageSize] = useState(12); // Display 12 products per page
+  const [totalCount, setTotalCount] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Fetch categories
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const categories = await categoryApi.getAllCategories();
+        setCategories(categories);
+      } catch (error) {
+        console.error("Error fetching categories:", error);
+        setError("Failed to load categories");
+      }
+    };
+    fetchCategories();
+  }, []);
+
+  // Fetch products
+  useEffect(() => {
+    const fetchProducts = async () => {
+      setIsLoading(true);
+      try {
+        const filter: ProductFilter = {
+          pageNumber,
+          pageSize,
+          attributeFilters: {},
+        };
+        if (selectedCategory !== "All") {
+          filter.attributeFilters = { categoryId: selectedCategory };
+        }
+        const response: PaginatedProductResponse = await productApi.getAllProducts(filter);
+        setProducts(response.items);
+        setTotalCount(response.totalCount);
+      } catch (error) {
+        console.error("Error fetching products:", error);
+        setError("Failed to load products");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchProducts();
+  }, [pageNumber, selectedCategory]);
+
+  const handlePageChange = (newPage: number) => {
+    setPageNumber(newPage);
+  };
 
   return (
     <div className="min-h-screen bg-background py-8">
@@ -42,79 +88,72 @@ export default function Products() {
             <SelectContent>
               <SelectItem value="All">All Categories</SelectItem>
               {categories.map((category) => (
-                <SelectItem key={category} value={category}>
-                  {category}
+                <SelectItem key={category.categoryId} value={category.categoryId!}>
+                  {category.categoryName}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <span>Showing {filteredProducts.length} products</span>
+            <span>Showing {products.length} of {totalCount} products</span>
           </div>
         </div>
 
         {/* Products Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {filteredProducts.map((product) => (
-            <Card key={product.id} className="group cursor-pointer hover:shadow-lg transition-all duration-300 h-full">
-              <CardContent className="p-0 h-full flex flex-col">
-                <div className="aspect-square overflow-hidden rounded-t-lg">
-                  <img 
-                    src={product.image} 
-                    alt={product.name}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                  />
-                </div>
-                <div className="p-4 flex flex-col flex-grow">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Badge variant="secondary" className="text-xs">
-                      {product.category}
-                    </Badge>
-                    {product.featured && (
-                      <Badge className="text-xs bg-yellow-100 text-yellow-800 border-yellow-300">
-                        Featured
+        {isLoading ? (
+          <div className="text-center py-12">
+            <p className="text-gray-600">Loading products...</p>
+          </div>
+        ) : error ? (
+          <div className="text-center py-12">
+            <p className="text-red-600">{error}</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {products.map((product) => (
+              <Card key={product.productId} className="group cursor-pointer hover:shadow-lg transition-all duration-300 h-full">
+                <CardContent className="p-0 h-full flex flex-col">
+                  <div className="aspect-square overflow-hidden rounded-t-lg">
+                    <img 
+                      src={product.productImageUrl} 
+                      alt={product.productName}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
+                  </div>
+                  <div className="p-4 flex flex-col flex-grow">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Badge variant="secondary" className="text-xs">
+                        {categories.find((c) => c.categoryId === product.categoryId)?.categoryName || product.categoryId}
                       </Badge>
-                    )}
-                  </div>
-                  
-                  <h3 className="font-semibold text-foreground mb-2 line-clamp-2">
-                    {product.name}
-                  </h3>
-                  
-                  <p className="text-sm text-muted-foreground mb-3 line-clamp-2 flex-grow">
-                    {product.description}
-                  </p>
-                  
-                  <div className="flex items-center gap-2 mb-3">
-                    <div className="flex items-center">
-                      {/* {[...Array(5)].map((_, i) => (
-                        <Star 
-                          key={i} 
-                          className={`size-3 ${
-                            i < 4 ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'
-                          }`} 
-                        />
-                      ))} */}
+                      {product.hotDeals && (
+                        <Badge className="text-xs bg-yellow-100 text-yellow-800 border-yellow-300">
+                          Featured
+                        </Badge>
+                      )}
                     </div>
-                    {/* <span className="text-xs text-muted-foreground">(4.8)</span> */}
+                    
+                    <h3 className="font-semibold text-foreground mb-2 line-clamp-2">
+                      {product.productName}
+                    </h3>
+                    
+                    <p className="text-sm text-muted-foreground mb-3 line-clamp-2 flex-grow">
+                      {product.productDescription}
+                    </p>
+                    
+                    <div className="flex items-center justify-between">
+                      <span className="text-lg font-bold text-primary">
+                        {product.productUnitPrice != null ? `NRS. ${product.productUnitPrice}` : "N/A"}
+                      </span>
+                    </div>
                   </div>
-                  
-                  <div className="flex items-center justify-between">
-                    <span className="text-lg font-bold text-primary">
-                      NRS. {product.price}
-                    </span>
-                    {/* <Button size="sm" variant="outline">
-                      Add to Cart
-                    </Button> */}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
 
         {/* Empty State */}
-        {filteredProducts.length === 0 && (
+        {!isLoading && !error && products.length === 0 && (
           <div className="text-center py-12">
             <div className="w-24 h-24 mx-auto mb-4 bg-muted rounded-full flex items-center justify-center">
               <Filter className="size-8 text-muted-foreground" />
@@ -131,11 +170,23 @@ export default function Products() {
           </div>
         )}
 
-        {/* Load More Button (for future pagination) */}
-        {filteredProducts.length > 0 && (
-          <div className="text-center mt-12">
-            <Button variant="outline" size="lg">
-              Load More Products
+        {/* Pagination */}
+        {!isLoading && !error && products.length > 0 && (
+          <div className="flex justify-between items-center mt-12">
+            <Button
+              disabled={pageNumber === 1}
+              onClick={() => handlePageChange(pageNumber - 1)}
+            >
+              Previous
+            </Button>
+            <span>
+              Page {pageNumber} of {Math.ceil(totalCount / pageSize)}
+            </span>
+            <Button
+              disabled={pageNumber * pageSize >= totalCount}
+              onClick={() => handlePageChange(pageNumber + 1)}
+            >
+              Next
             </Button>
           </div>
         )}
