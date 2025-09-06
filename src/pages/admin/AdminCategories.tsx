@@ -289,7 +289,7 @@ export default function AdminCategories() {
                             </div>
                           </FormItem>
 
-                          {attribute.type === "dropdown" && (
+                          {(attribute.type === "dropdown" || attribute.type === "checkbox") && (
                             <FormItem>
                               <FormLabel>Possible Values (one per line)</FormLabel>
                               <FormControl>
