@@ -271,7 +271,7 @@ export default function Layout({ children }: LayoutProps) {
               </div>
             </div>
             <div className="border-t border-gray-700 mt-8 pt-8 text-center text-sm text-gray-400">
-              <p>&copy; {new Date().getFullYear()} Samsonix. All rights reserved.</p>
+              <p>&copy; {new Date().getFullYear()} Samsonix. All rights reserved. <br /> Powered By <span className="hover:text-white transition-colors; color:red">Freelancely.</span><br /><a href="https://www.freelancely.com.np" className="hover:text-white transition-colors" target="_blank">www.freelancely.com.np</a></p>
             </div>
           </div>
         </footer>
