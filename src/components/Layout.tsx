@@ -3,6 +3,12 @@ import { Menu, ShoppingCart, User, X, LogOut } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button.tsx";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu.tsx";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -94,17 +100,32 @@ export default function Layout({ children }: LayoutProps) {
               {/* Desktop Actions */}
               <div className="hidden md:flex items-center space-x-4">
                 {isAdminPage ? (
-                  // Admin panel actions - Show logout button
+                  // Admin panel actions - Show user dropdown and logout button
                   isAuthenticated && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleLogout}
-                      className="flex items-center"
-                    >
-                      <LogOut className="size-4 mr-2" />
-                      Logout
-                    </Button>
+                    <div className="flex items-center space-x-2">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="outline" size="sm">
+                            <User className="size-4 mr-2" />
+                            Admin
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent>
+                          <DropdownMenuItem asChild>
+                            <Link to="/admin/change-password">Change Password</Link>
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleLogout}
+                        className="flex items-center"
+                      >
+                        <LogOut className="size-4 mr-2" />
+                        Logout
+                      </Button>
+                    </div>
                   )
                 ) : (
                   // User site actions
@@ -169,6 +190,13 @@ export default function Layout({ children }: LayoutProps) {
                         </Link>
                       ))}
                       <Link
+                        to="/admin/change-password"
+                        className={`block px-3 py-2 text-sm font-medium transition-colors text-muted-foreground hover:text-primary`}
+                        onClick={() => setMobileMenuOpen(false)}
+                      >
+                        Change Password
+                      </Link>
+                      <Link
                         to="/"
                         className="block px-3 py-2 text-sm font-medium text-muted-foreground hover:text-primary"
                         onClick={() => setMobileMenuOpen(false)}
@@ -195,17 +223,26 @@ export default function Layout({ children }: LayoutProps) {
                   
                   <div className="border-t pt-3 mt-3">
                     {isAdminPage ? (
-                      // Admin panel mobile - Show logout
+                      // Admin panel mobile - Show change password and logout
                       isAuthenticated && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={handleLogout}
-                          className="w-full flex items-center justify-center"
-                        >
-                          <LogOut className="size-4 mr-2" />
-                          Logout
-                        </Button>
+                        <>
+                          <Link
+                            to="/admin/change-password"
+                            className="block px-3 py-2 text-sm font-medium text-muted-foreground hover:text-primary"
+                            onClick={() => setMobileMenuOpen(false)}
+                          >
+                            Change Password
+                          </Link>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={handleLogout}
+                            className="w-full flex items-center justify-center"
+                          >
+                            <LogOut className="size-4 mr-2" />
+                            Logout
+                          </Button>
+                        </>
                       )
                     ) : (
                       // User site mobile
