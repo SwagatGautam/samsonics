@@ -13,6 +13,7 @@ import AdminCategories from "./pages/admin/AdminCategories.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import LoginPage from "./pages/admin/AdminLogin.tsx";
 import ProtectedRoute from "./components/ProtectedRoute.tsx"
+import ChangePassword from "./pages/admin/ChangePassword.tsx"
 
 export default function App() {
   return (
@@ -45,8 +46,15 @@ export default function App() {
                 </ProtectedRoute>
               } 
             />
-            
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            <Route 
+            path="/admin/change-password" 
+            element={
+              <ProtectedRoute>
+                <ChangePassword />
+              </ProtectedRoute>
+            } 
+          />
+          
             <Route path="*" element={<NotFound />} />
           </Routes>
         </Layout>
