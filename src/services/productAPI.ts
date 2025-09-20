@@ -1,7 +1,7 @@
 import { toast } from 'sonner';
 
 // Use Vite's environment variable system
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5225/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:7183/api';
 
 // Get auth token from localStorage
 const getAuthToken = (): string => {
@@ -42,7 +42,7 @@ export interface Product {
   productName: string;
   productDescription: string;
   productImageUrl: string;
-  productQuantity: number | null; // Allow null
+  productQuantity: number; 
   productUnitPrice: number | null; // Allow null
   hotDeals: boolean;
   productAttributes: ProductAttribute[];
@@ -72,10 +72,7 @@ export interface ProductFormData {
 export interface ProductFilter {
   pageNumber: number;
   pageSize: number;
-  minPrice?: number | null;
-  maxPrice?: number | null;
-  hotdeals?: boolean;
-  attributeFilters?: Record<string, string | null>;
+  categoryId?: string;
 }
 
 // Handle API response
@@ -101,26 +98,13 @@ export const productApi = {
       const queryParams = new URLSearchParams({
         pageNumber: filter.pageNumber.toString(),
         pageSize: filter.pageSize.toString(),
-        ...(filter.minPrice !== null && filter.minPrice !== undefined && { minPrice: filter.minPrice.toString() }),
-        ...(filter.maxPrice !== null && filter.maxPrice !== undefined && { maxPrice: filter.maxPrice.toString() }),
-        ...(filter.hotdeals !== undefined && { hotdeals: filter.hotdeals.toString() }),
+        ...(filter.categoryId !== undefined ? { categoryId: filter.categoryId.toString() } : {}),
+        // Add more filters here if needed
       });
 
-      const body = {
-        pageNumber: filter.pageNumber,
-        pageSize: filter.pageSize,
-        ...(filter.minPrice !== null && filter.minPrice !== undefined && { minPrice: filter.minPrice }),
-        ...(filter.maxPrice !== null && filter.maxPrice !== undefined && { maxPrice: filter.maxPrice }),
-        ...(filter.hotdeals !== undefined && { hotdeals: filter.hotdeals }),
-        ...(filter.attributeFilters && Object.keys(filter.attributeFilters).length > 0 && {
-          attributeFilters: filter.attributeFilters,
-        }),
-      };
-
       const response = await fetch(`${API_BASE_URL}/product/view?${queryParams.toString()}`, {
-        method: 'POST',
+        method: 'GET',
         headers: getHeaders(),
-        body: JSON.stringify(body),
       });
 
       const data = await handleResponse<PaginatedProductResponse>(response);
@@ -140,6 +124,7 @@ export const productApi = {
       });
 
       const data = await handleResponse<Product>(response);
+      console.log(data);
       return data.data as Product;
     } catch (error) {
       console.error('Error fetching product:', error);
