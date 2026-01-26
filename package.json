@@ -43,6 +43,7 @@
     "tailwindcss": "^4.1.12",
     "use-debounce": "^10.0.5",
     "vaul": "^1.1.2",
+    "vercel": "^50.5.0",
     "zod": "^3.25.76"
   },
   "devDependencies": {
