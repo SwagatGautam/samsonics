@@ -1,7 +1,9 @@
+import React, { useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { MapPin, Phone, Mail, Clock, Send } from "lucide-react";
+import emailjs from "@emailjs/browser";
 
 import { Button } from "@/components/ui/button.tsx";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card.tsx";
@@ -30,11 +32,37 @@ export default function Contact() {
     },
   });
 
-  const onSubmit = (data: ContactFormData) => {
-    // Simulate form submission
-    console.log("Contact form data:", data);
-    toast.success("Message sent successfully! We'll get back to you soon.");
-    form.reset();
+  const [isSending, setIsSending] = useState(false);
+const formRef = useRef<HTMLFormElement>(null);
+
+  const sendEmail = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setIsSending(true);
+
+    if (!formRef.current) {
+    toast.error("Form reference not found.");
+    return;
+  }
+
+    emailjs
+      .sendForm(
+        "service_cdndi6s",    // Replace with your EmailJS Service ID
+        "template_mab6hxc",  
+         formRef.current, // Replace with your EmailJS Template ID
+        "r4unbEFLGfGY-WEbU" ,    // Replace with your EmailJS Public Key
+      )
+      .then(
+        (result) => {
+          toast.success("Message sent successfully! We'll get back to you soon.");
+          setIsSending(false);
+          form.reset();
+        },
+        (error) => {
+        console.error("EmailJS Error:", error);
+        toast.error("Failed to send message. Please try again.");
+        setIsSending(false);
+        }
+      );
   };
 
   const contactInfo = [
@@ -111,7 +139,7 @@ export default function Contact() {
               </CardHeader>
               <CardContent>
                 <Form {...form}>
-                  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                  <form ref={formRef} onSubmit={sendEmail} className="space-y-6">
                     <FormField
                       control={form.control}
                       name="name"
@@ -172,9 +200,13 @@ export default function Contact() {
                       )}
                     />
                     
-                    <Button type="submit" className="w-full" size="lg">
-                      <Send className="size-4 mr-2" />
-                      Send Message
+                    <Button type="submit" className="w-full" size="lg" disabled={isSending}>
+                      {isSending ? "Sending..." : (
+                        <>
+                          <Send className="size-4 mr-2" />
+                          Send Message
+                        </>
+                      )}
                     </Button>
                   </form>
                 </Form>

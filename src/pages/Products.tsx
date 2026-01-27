@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Star, Filter } from "lucide-react";
-
+import ProductDialog from "./ProductDilaog.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import { Card, CardContent } from "@/components/ui/card.tsx";
 import { Badge } from "@/components/ui/badge.tsx";
@@ -17,6 +17,8 @@ export default function Products() {
   const [totalCount, setTotalCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
 
   // Fetch categories
   useEffect(() => {
@@ -37,13 +39,12 @@ export default function Products() {
     const fetchProducts = async () => {
       setIsLoading(true);
       try {
-        const filter: ProductFilter = {
+        let filter: ProductFilter = {
           pageNumber,
           pageSize,
-          attributeFilters: {},
         };
         if (selectedCategory !== "All") {
-          filter.attributeFilters = { categoryId: selectedCategory };
+          filter.categoryId = selectedCategory;
         }
         const response: PaginatedProductResponse = await productApi.getAllProducts(filter);
         setProducts(response.items);
@@ -61,6 +62,11 @@ export default function Products() {
   const handlePageChange = (newPage: number) => {
     setPageNumber(newPage);
   };
+
+  const handleProductClick = (product: Product) => {
+    setSelectedProduct(product);
+    setIsDialogOpen(true);
+  }
 
   return (
     <div className="min-h-screen bg-background py-8">
@@ -81,14 +87,14 @@ export default function Products() {
             <Filter className="size-4 text-muted-foreground" />
             <span className="text-sm font-medium">Filter by category:</span>
           </div>
-          <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+          <Select value={selectedCategory} onValueChange={(val) => { console.log('Dropdown changed to:', val); setSelectedCategory(val); }}>
             <SelectTrigger className="w-full sm:w-48">
               <SelectValue placeholder="Select category" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="All">All Categories</SelectItem>
               {categories.map((category) => (
-                <SelectItem key={category.categoryId} value={category.categoryId!}>
+                <SelectItem key={category.categoryId} value={String(category.categoryId)}>
                   {category.categoryName}
                 </SelectItem>
               ))}
@@ -109,42 +115,29 @@ export default function Products() {
             <p className="text-red-600">{error}</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
             {products.map((product) => (
-              <Card key={product.productId} className="group cursor-pointer hover:shadow-lg transition-all duration-300 h-full">
-                <CardContent className="p-0 h-full flex flex-col">
-                  <div className="aspect-square overflow-hidden rounded-t-lg">
-                    <img 
-                      src={product.productImageUrl} 
+              <Card
+                key={product.productId}
+                className="group cursor-pointer hover:shadow-lg transition-all duration-300 h-100 x flex-col justify-between items-center bg-white border border-gray-100 rounded-xl"
+                onClick={() => handleProductClick(product)}
+              >
+                <CardContent className="p-0 flex flex-col items-center w-full h-full">
+                  <div className="w-full flex-1 flex items-center justify-center overflow-hidden rounded-t-xl bg-gray-50 min-h-[140px]">
+                    <img
+                      src={product.productImageUrl}
                       alt={product.productName}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      className="object-contain max-h-40 group-hover:scale-105 transition-transform duration-300"
                     />
                   </div>
-                  <div className="p-4 flex flex-col flex-grow">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Badge variant="secondary" className="text-xs">
-                        {categories.find((c) => c.categoryId === product.categoryId)?.categoryName || product.categoryId}
-                      </Badge>
-                      {product.hotDeals && (
-                        <Badge className="text-xs bg-yellow-100 text-yellow-800 border-yellow-300">
-                          Featured
-                        </Badge>
-                      )}
-                    </div>
-                    
-                    <h3 className="font-semibold text-foreground mb-2 line-clamp-2">
+                  <div className="p-3 w-full flex flex-col items-center">
+                    <h3 className="font-semibold text-gray-900 text-center mb-1 line-clamp-1">
                       {product.productName}
                     </h3>
-                    
-                    <p className="text-sm text-muted-foreground mb-3 line-clamp-2 flex-grow">
-                      {product.productDescription}
-                    </p>
-                    
-                    <div className="flex items-center justify-between">
-                      <span className="text-lg font-bold text-primary">
-                        {product.productUnitPrice != null ? `NRS. ${product.productUnitPrice}` : "N/A"}
-                      </span>
-                    </div>
+                    <span className="text-sm mb-1 font-mono">
+                      {product.productUnitPrice != null ? `NPR-${product.productUnitPrice}` : "N/A"}
+                    </span>
+                    <span className="text-xs text-gray-500">{categories.find((c) => c.categoryId === product.categoryId)?.categoryName || product.categoryId}</span>
                   </div>
                 </CardContent>
               </Card>
@@ -169,7 +162,11 @@ export default function Products() {
             </Button>
           </div>
         )}
-
+        <ProductDialog
+          open={isDialogOpen}
+          onOpenChange={setIsDialogOpen}
+          product={selectedProduct}
+        />
         {/* Pagination */}
         {!isLoading && !error && products.length > 0 && (
           <div className="flex justify-between items-center mt-12">
