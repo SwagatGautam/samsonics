@@ -86,11 +86,7 @@ export default function AdminProducts() {
         const filter: ProductFilter = {
           pageNumber,
           pageSize,
-          attributeFilters: {},
         };
-        if (selectedCategory !== "All") {
-          filter.attributeFilters = { categoryId: selectedCategory };
-        }
         const response = await productApi.getAllProducts(filter);
         setProducts(
           response.items.filter(
@@ -124,6 +120,7 @@ export default function AdminProducts() {
         productAttributes: data.productAttributes || [],
       };
 
+      setIsLoading(true); // Start loading
       if (editingProduct) {
         await productApi.updateProduct(editingProduct.productId, productData);
       } else {
@@ -135,6 +132,8 @@ export default function AdminProducts() {
       setTotalCount(response.totalCount);
     } catch (error) {
       console.error("Error saving product:", error);
+    } finally {
+      setIsLoading(false); // Stop loading
     }
   };
 
@@ -420,7 +419,17 @@ export default function AdminProducts() {
 
                   <div className="flex gap-3">
                     <Button type="submit" className="flex-1" disabled={isLoading}>
-                      {editingProduct ? "Update Product" : "Create Product"}
+                      {isLoading ? (
+                        <span className="flex items-center justify-center gap-2">
+                          <svg className="animate-spin h-4 w-4 text-white" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+                          </svg>
+                          Loading...
+                        </span>
+                      ) : (
+                        editingProduct ? "Update Product" : "Create Product"
+                      )}
                     </Button>
                     <Button type="button" variant="outline" onClick={handleCloseDialog} disabled={isLoading}>
                       Cancel

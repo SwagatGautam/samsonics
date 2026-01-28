@@ -1,11 +1,11 @@
-@import url("https://fonts.googleapis.com/css2?family=Fira+Code:wght@300..700&family=Geist+Mono:wght@100..900&family=Geist:wght@100..900&family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&family=Montserrat:ital,wght@0,100..900;1,100..900&family=Noto+Serif:ital,wght@0,100..900;1,100..900&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Raleway:ital,wght@0,100..900;1,100..900&family=Fira+Code:wght@300..700&family=Geist+Mono:wght@100..900&family=Geist:wght@100..900&family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&family=Montserrat:ital,wght@0,100..900;1,100..900&family=Noto+Serif:ital,wght@0,100..900;1,100..900&display=swap");
 
 @import "tailwindcss";
 @import "tw-animate-css";
 @plugin "@tailwindcss/typography";
 
 @theme inline {
-  --font-sans: Inter, sans-serif;
+  --font-sans: "Raleway", sans-serif;
   --font-mono: JetBrains Mono, monospace;
   --font-serif: Merriweather, serif;
 
@@ -155,7 +155,28 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground;
+    background-color: #111827; /* Tailwind's gray-900 */
+    color: var(--color-foreground, #fff);
     letter-spacing: var(--tracking-normal);
   }
+}
+
+/* Shimmer effect for hero text */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.animate-shimmer {
+  animation: shimmer 4s linear infinite;
+  background-size: 200% 100%;
+  background-image: linear-gradient(90deg, #f3e8ff 10%, #a5b4fc 30%, #38bdf8 60%, #f9a8d4 80%, #f3e8ff 100%);
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
 }

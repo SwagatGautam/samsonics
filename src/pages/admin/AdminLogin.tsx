@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { login, verifyJwtToken } from "@/services/authService";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/use-auth";
+import axios from "axios";
 
 export default function LoginPage() {
   const [formData, setFormData] = useState({ email: '', password: '' });
@@ -41,8 +42,14 @@ export default function LoginPage() {
         localStorage.removeItem('authToken');
         throw new Error("Invalid token format - please try again");
       }
-    } catch (error: unknown) {
-      // ... error handling remains the same
+    } catch (error: any) {
+      if (error && error.response && error.response.data && error.response.data.errorMessage) {
+        toast.error(error.response.data.errorMessage);
+      } else if (error && typeof error.message === 'string') {
+        toast.error(error.message);
+      } else {
+        toast.error('Login failed');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -56,7 +63,7 @@ export default function LoginPage() {
 
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-background">
       <Card className="w-full max-w-md bg-white border border-gray-200 shadow-lg">
         <CardContent className="p-8">
           <div className="text-center mb-8">
@@ -135,13 +142,21 @@ export default function LoginPage() {
             )}
           </button>
 
-          {/* Forgot Password */}
-          <div className="text-center mt-6 pt-6 border-t border-gray-200">
-            <button 
-              className="text-sm text-blue-600 hover:text-blue-800 transition-colors"
+          {/* Forgot Password and Back to Home links */}
+          <div className="flex flex-col items-center mt-6">
+            <button
+              type="button"
+              className="text-sm text-blue-600 hover:underline focus:outline-none mb-2"
               disabled={isLoading}
             >
               Forgot your password?
+            </button>
+            <button
+              type="button"
+              className="text-sm text-gray-600 hover:underline focus:outline-none"
+              onClick={() => navigate("/")}
+            >
+              ← Back to Home
             </button>
           </div>
         </CardContent>
